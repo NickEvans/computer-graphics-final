@@ -19,8 +19,20 @@
             var move = 0.01;
 
             var scene = new THREE.Scene();
-            var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            //var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            var camera = new THREE.OrthographicCamera( WIDTH/-150, WIDTH/150, HEIGHT/150, HEIGHT/-150, 0, 10);
+
+            camera.lookAt(0,0,0);
+            camera.rotation.x = -21*Math.PI/180;
+            camera.rotation.y = 20*Math.PI/180;
+            camera.position.z = 5;
+            camera.position.x = 2.5;
+            camera.position.y = 2.5;
+
             var renderer = new THREE.WebGLRenderer({ antialias: true });
+
+            //WIDTH /= 150;
+            //HEIGHT /= 150;
             
             renderer.setSize(WIDTH, HEIGHT);
             document.body.appendChild(renderer.domElement);
@@ -50,8 +62,6 @@
             var lighting = new THREEx.ThreePointsLighting()
             scene.add(lighting)
 
-            camera.position.z = 5;
-            camera.lookAt(0,0,0);
 
             var mouse = new THREE.Vector2();
             var pos = new THREE.Vector3();
@@ -90,7 +100,8 @@
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
                     var temp = selected.position.x;
-                    selected.position.copy(hits[0].point.sub(offset));
+                    //selected.position.copy(hits[0].point.sub(offset));
+                    selected.position.copy(hits[0].point);
                     selected.position.x = temp;
                 } else {
                     var hits = ray.intersectObjects(sceneObjects);
