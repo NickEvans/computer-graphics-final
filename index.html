@@ -9,22 +9,20 @@
         </style>
     </head>
     <body>
-        <script src="js/three.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r79/three.min.js"></script>
-        
-<script src='js/threex.basiclighting.js'></script>
+        <script src='js/threex.basiclighting.js'></script>
 
         <script>
-            var slowMove = 0.01;
-            var clickMove = 0.2;
-            var shift = 0.005;
-            var move = slowMove;
+            var WIDTH = window.innerWidth;
+            var HEIGHT = window.innerHeight;
+
+            var move = 0.01;
 
             var scene = new THREE.Scene();
             var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            var renderer = new THREE.WebGLRenderer();
+            var renderer = new THREE.WebGLRenderer({ antialias: true });
             
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(WIDTH, HEIGHT);
             document.body.appendChild(renderer.domElement);
 
             var geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -32,58 +30,97 @@
             var cube = new THREE.Mesh(geometry, material);
             scene.add(cube);
 
+            var sceneObjects = [];
+            sceneObjects.push(cube);
+
+            //Plane to aid object positioning
+            var plane = new THREE.Mesh(
+                new THREE.PlaneBufferGeometry(500, 500, 8, 8),
+                new THREE.MeshBasicMaterial({
+                    wireframe: true,
+                    color: 0xffffff
+                })
+            );
+            //plane.visible = false;
+            scene.add(plane);
+
             var light = new THREE.PointLight();
             light.position.set(5, 5, 5);
             scene.add(light);
-
-            var lighting    = new THREEx.ThreePointsLighting()
-scene.add(lighting)
+            var lighting = new THREEx.ThreePointsLighting()
+            scene.add(lighting)
 
             camera.position.z = 5;
+            camera.lookAt(0,0,0);
 
-            var vec = new THREE.Vector3();
+            var mouse = new THREE.Vector2();
             var pos = new THREE.Vector3();
+            var ray = new THREE.Raycaster();
+            var offset = new THREE.Vector3();
+            var selected = null;
 
-            document.addEventListener('mousemove', onMouseMove, false);
-            document.addEventListener('click', function(){ 
-                move = clickMove;
-                cube.material.color.setHex(Math.random()*0xffffff);
+            document.addEventListener('mousedown', function(){ 
+                mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
+
+                ray.setFromCamera(mouse, camera);
+
+                var hits = ray.intersectObjects(sceneObjects);
+
+                if(hits.length > 0) {
+                    selected = hits[0].object;
+                    var hits = ray.intersectObject(plane);
+                    offset.copy(hits[0].point).sub(plane.position);
+                }
             });
 
-            function onMouseMove(event) {
+            document.addEventListener('mouseup', function() {
+                selected = null;
+            });
 
-            vec.set((event.clientX/window.innerWidth)*2-1, - (event.clientY/window.innerHeight)*2+1, 0.5);
-            vec.unproject(camera);
-            vec.sub(camera.position).normalize();
+            document.addEventListener('mousemove', onMouseMove, false);
 
-            var distance = ( 2 - camera.position.z) / vec.z;
+            function onMouseMove(event) { 
+                mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
+                
+                var vec = new THREE.Vector3(mouse.x, mouse.y, 1);
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
+                
+                ray.set(camera.position, vec);
+                if(selected != null) {
+                    var hits = ray.intersectObject(plane);
+                    var temp = selected.position.x;
+                    selected.position.copy(hits[0].point.sub(offset));
+                    selected.position.x = temp;
+                } else {
+                    var hits = ray.intersectObjects(sceneObjects);
+                    if(hits.length > 0) {
+                        plane.position.copy(hits[0].object.position);
+                        //plane.lookAt(camera.position);
+                    }
+                }
+                /*
+                vec.set((event.clientX/window.innerWidth)*2-1, - (event.clientY/window.innerHeight)*2+1, 0.5);
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
 
-            pos.copy(camera.position).add(vec.multiplyScalar(distance));
+                var distance = ( 2 - camera.position.z) / vec.z;
 
-            light.position.copy(pos);
+                pos.copy(camera.position).add(vec.multiplyScalar(distance));
+
+                light.position.copy(pos); */
             }
 
             function animate() {
                 requestAnimationFrame(animate);
 
-                cube.rotation.x += move;
-                cube.rotation.y += move;
-
-                move = approach(move, slowMove, shift);
+                //cube.rotation.x += move;
+                //cube.rotation.y += move;
 
                 renderer.render(scene, camera);
             }
 
-            function approach(a, b, x) {
-                if(a > b) {
-                    return Math.max(a - x, b);
-                }
-                else {
-                    return Math.min(a + x, b);
-                }
-            }
             animate();
-
         </script>
     </body>
 </html>
