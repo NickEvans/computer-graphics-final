@@ -22,12 +22,14 @@
             //var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             var camera = new THREE.OrthographicCamera( WIDTH/-150, WIDTH/150, HEIGHT/150, HEIGHT/-150, 0, 10);
 
-            camera.lookAt(0,0,0);
-            camera.rotation.x = -21*Math.PI/180;
-            camera.rotation.y = 20*Math.PI/180;
-            camera.position.z = 5;
-            camera.position.x = 2.5;
-            camera.position.y = 2.5;
+
+            camera.position.set(2,2,2);
+            camera.lookAt(scene.position);
+
+            camera.updateMatrixWorld(); //Needed?
+
+            //camera.updateProjectionMatrix;
+            //camera.updateMatrixWorld();
 
             var renderer = new THREE.WebGLRenderer({ antialias: true });
 
@@ -80,29 +82,33 @@
                     selected = hits[0].object;
                     var hits = ray.intersectObject(plane);
                     offset.copy(hits[0].point).sub(plane.position);
+
+                    //For debugging:
+                    selected.material.color = new THREE.Color ('red');
                 }
             });
 
             document.addEventListener('mouseup', function() {
+                selected.material.color = new THREE.Color('white');
                 selected = null;
             });
 
             document.addEventListener('mousemove', onMouseMove, false);
 
             function onMouseMove(event) { 
+                event.preventDefault();
+
                 mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
-                
-                var vec = new THREE.Vector3(mouse.x, mouse.y, 1);
-                vec.unproject(camera);
-                vec.sub(camera.position).normalize();
-                
-                ray.set(camera.position, vec);
+                ray.setFromCamera(mouse, camera);
+                var hits = ray.intersectObjects(sceneObjects);
+
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
                     var temp = selected.position.x;
-                    //selected.position.copy(hits[0].point.sub(offset));
-                    selected.position.copy(hits[0].point);
+                    selected.position.copy(hits[0].point.sub(offset));
+                    //selected.position.copy(hits[0].point);
                     selected.position.x = temp;
+                    offset.x = temp;
                 } else {
                     var hits = ray.intersectObjects(sceneObjects);
                     if(hits.length > 0) {
