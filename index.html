@@ -108,15 +108,15 @@
 
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
-                    var temp = selected.position.y;
-                    //selected.position.copy(hits[0].point.sub(offset));
-                    selected.position.copy(hits[0].point);
-                    selected.position.y = temp;
-                    //offset.x = temp;
+                    var temp = selected.position.x;
+                    selected.position.copy(hits[0].point.sub(offset));
+                    //selected.position.copy(hits[0].point);
+                    selected.position.x = temp;
+                    offset.x = temp;
                 } else {
                     var hits = ray.intersectObjects(sceneObjects);
                     if(hits.length > 0) {
-                        //plane.position.copy(hits[0].object.position);
+                        plane.position.copy(hits[0].object.position);
                         //plane.lookAt(camera.position);
                     }
                 }
