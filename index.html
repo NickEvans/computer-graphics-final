@@ -10,8 +10,10 @@
     </head>
     <body>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r79/three.min.js"></script>
+        <script src="https://threejs.org/build/three.min.js"></script>
         <script src='js/threex.basiclighting.js'></script>
-
+        <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+        <script src='js/threex.basiclighting.js'></script>
         <script>
             var WIDTH = window.innerWidth;
             var HEIGHT = window.innerHeight;
@@ -25,19 +27,33 @@
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0x949998);
 
-            //var eases = [0.1, 0.1, 0.1, 0.1];
-
             //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            //var camera = new THREE.OrthographicCamera( WIDTH/-150, WIDTH/150, HEIGHT/150, HEIGHT/-150, 0, 5);
             var camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
-            camera.position.set(10,10,10);
-            camera.lookAt(scene.position);
-            camera.updateMatrixWorld();
-
+            
             var renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(WIDTH, HEIGHT);
             document.body.appendChild(renderer.domElement);
 
+            var controls = new THREE.OrbitControls (camera, renderer.domElement);
+            controls.addEventListener("change",
+                function(){
+                    camera.updateProjectionMatrix();
+                    camera.updateMatrixWorld();
+                    console.log("Camera position: (" + camera.position.x + ", " + camera.position.y + "," + camera.position.z + ")");
+                }
+            );
+            controls.maxPolarAngle = Math.PI/3;
+            controls.minPolarAngle = Math.PI/3;
+
+            controls.minAzimuthAngle = -Math.PI/3;
+            controls.maxAzimuthAngle = Math.PI/3;
+
+            camera.position.set(100,100,100);
+            camera.lookAt(scene.position);
+            controls.update();
+            camera.updateProjectionMatrix();
+            camera.updateMatrixWorld();
+            
             var colors = [];
             colors.push(new THREE.Color(0xBF1304));
             colors.push(new THREE.Color(0xBF4904));
@@ -77,25 +93,27 @@
             light.position.set(5, 5, 5);
             scene.add(light);
 
-            var lighting = new THREEx.ThreePointsLighting()
-            scene.add(lighting)
+            var lighting = new THREEx.ThreePointsLighting();
+            scene.add(lighting);
 
             document.addEventListener('mousedown', function(){ 
+                event.preventDefault();
+
                 mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
                 ray.setFromCamera(mouse, camera);
                 var hits = ray.intersectObjects(sceneObjects);
 
                 if(hits.length > 0) {
                     selected = hits[0].object;
+                    selected.material.transparent = true;
+                    selected.material.opacity = 0.6;
+                    controls.enabled = false;
 
                     //A new raycast is needed for the correct offset
                     mouse.set(0, -(event.clientY/HEIGHT)*2 + 1);
                     ray.setFromCamera(mouse, camera);
                     var hits = ray.intersectObject(plane);
                     offset.copy(hits[0].point).sub(selected.position);
-
-                    selected.material.transparent = true;
-                    selected.material.opacity = 0.6;
                 }
             });
 
@@ -104,12 +122,15 @@
                     snapSwap(selected);
                     selected.material.transparent = false;
                     selected = null;
+                    controls.enabled = true;
                 }
             });
 
             document.addEventListener('mousemove', onMouseMove, false);
 
             function onMouseMove(event) { 
+                event.preventDefault();
+
                 mouse.set(0, -(event.clientY/HEIGHT)*2 + 1);
                 ray.setFromCamera(mouse, camera);
                 var hits = ray.intersectObjects(sceneObjects);
@@ -123,22 +144,21 @@
                     selected.position.z = 0;
 
                     snapSwap(selected);
-                } else {
-                    var hits = ray.intersectObjects(sceneObjects);
-                    if(hits.length > 0) {
-                        //plane.position.copy(hits[0].object.position);
-                        //plane.lookAt(camera.position);
-                    }
                 }
             }
 
             function animate() {
                 requestAnimationFrame(animate);
 
+                controls.update();
+
                 //Animate swapping to correct ordering
                 for(let i=0; i<4; i++) {
-                    if(objOrder[i].position.y != i) {
-                        objOrder[i].position.lerp(new THREE.Vector3(0, i, 0), OutQuadratic(0.08));
+                    let obj = objOrder[i];
+                    if(obj != selected) {
+                        if(obj.position.y != i) {
+                            obj.position.lerp(new THREE.Vector3(0, i, 0), OutQuadratic(0.08));
+                        }
                     }
                 }
                 renderer.render(scene, camera);
@@ -152,7 +172,7 @@
             function snapSwap(obj) {
                 //Physically snap
                 let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
-                obj.position.copy(new THREE.Vector3(0, pos, 0));
+                //obj.position.copy(new THREE.Vector3(0, pos, 0));
 
                 //Swap recorded order
                 let temp = objOrder[pos];
