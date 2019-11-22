@@ -16,7 +16,7 @@
             var WIDTH = window.innerWidth;
             var HEIGHT = window.innerHeight;
             var aspect = WIDTH / HEIGHT;
-            var viewSize = 10;
+            var viewSize = 8;
             var mouse = new THREE.Vector2();
             var ray = new THREE.Raycaster();
             var offset = new THREE.Vector3();
@@ -25,7 +25,7 @@
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0x949998);
 
-            var eases = [0.1, 0.1, 0.1, 0.1];
+            //var eases = [0.1, 0.1, 0.1, 0.1];
 
             //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             //var camera = new THREE.OrthographicCamera( WIDTH/-150, WIDTH/150, HEIGHT/150, HEIGHT/-150, 0, 5);
@@ -51,6 +51,11 @@
                     new THREE.BoxGeometry(1, 1, 1),
                     new THREE.MeshPhongMaterial( { color: colors[i] } )
                 );
+
+                //Fix banding as cube meshes overlap
+                c.material.polygonOffset = true;
+                c.material.polygonOffsetFactor = -0.1*i;
+
                 c.position.set(0, i, 0);
                 scene.add(c);
                 sceneObjects.push(c);
@@ -87,19 +92,14 @@
                     mouse.set(0, -(event.clientY/HEIGHT)*2 + 1);
                     ray.setFromCamera(mouse, camera);
                     var hits = ray.intersectObject(plane);
-                    //var temp = new THREE.Vector3();
-                    //temp.copy(hits[0].point);
-                    //temp.x = 0;
                     offset.copy(hits[0].point).sub(selected.position);
 
-                    //For debugging:
                     selected.material.transparent = true;
                     selected.material.opacity = 0.6;
                 }
             });
 
             document.addEventListener('mouseup', function() {
-                //selected.material.color = new THREE.Color('white');
                 if(selected != null) {
                     snapSwap(selected);
                     selected.material.transparent = false;
@@ -156,11 +156,8 @@
 
                 //Swap recorded order
                 let temp = objOrder[pos];
-                //temp.position.y = objOrder.indexOf(obj);
                 objOrder[objOrder.indexOf(obj)] = temp;
                 objOrder[pos] = obj;
-
-                //console.log("("+pos.x+", "+pos.y+", "+pos.z+")");
             }
 
             animate();
