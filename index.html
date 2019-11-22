@@ -24,6 +24,8 @@
             var offset = new THREE.Vector3();
             var selected = null;
 
+            var animFinished = false; //If animations have finished playing;
+
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0xFAFAE4);
 
@@ -45,8 +47,8 @@
             controls.maxPolarAngle = Math.PI/3;
             controls.minPolarAngle = Math.PI/3;
 
-            controls.minAzimuthAngle = -Math.PI/3;
-            controls.maxAzimuthAngle = Math.PI/3;
+            controls.minAzimuthAngle = -Math.PI/8;
+            controls.maxAzimuthAngle = Math.PI/2.2;
 
             camera.position.set(100,100,100);
             camera.lookAt(scene.position);
@@ -82,12 +84,11 @@
             var plane = new THREE.Mesh(
                 new THREE.PlaneBufferGeometry(500, 500, 8, 8),
                 new THREE.MeshBasicMaterial({
-                    wireframe: true,
-                    color: 0xffffff
+                    //wireframe: true,
+                    //color: 0xffffff,
+                    visible: false
                 })
             );
-            plane.material.transparent = true;
-            plane.material.opacity = 0;
             scene.add(plane);
 
             //Lighting
@@ -139,7 +140,9 @@
 
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
-                    selected.position.copy(hits[0].point.sub(offset));
+                    if(hits.length > 0) {
+                        selected.position.copy(hits[0].point.sub(offset));
+                    }
 
                     //Lock to y-axis
                     selected.position.x = 0;
@@ -157,12 +160,19 @@
                 //Animate swapping to correct ordering
                 for(let i=0; i<objOrder.length; i++) {
                     let obj = objOrder[i];
+                    var done = false;
                     if(obj != selected) {
                         if(obj.position.y != i) {
                             obj.position.lerp(new THREE.Vector3(0, i, 0), OutQuadratic(0.08));
+                            done = done && false;
+                        } else {
+                            done = done && true;
                         }
                     }
                 }
+
+                animFinished = done;
+
                 renderer.render(scene, camera);
             }
 
