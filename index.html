@@ -99,6 +99,7 @@
 
             document.addEventListener('mouseup', function() {
                 //selected.material.color = new THREE.Color('white');
+                snapSwap(selected);
                 selected = null;
             });
 
@@ -129,6 +130,20 @@
                 requestAnimationFrame(animate);
 
                 renderer.render(scene, camera);
+            }
+
+            function snapSwap(obj) {
+                //Physically snap
+                let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
+                obj.position.copy(new THREE.Vector3(0, pos, 0));
+
+                //Swap recorded order
+                let temp = objOrder[pos];
+                temp.position.y = objOrder.indexOf(obj);
+                objOrder[objOrder.indexOf(obj)] = temp;
+                objOrder[pos] = obj;
+                
+                //console.log("("+pos.x+", "+pos.y+", "+pos.z+")");
             }
 
             animate();
