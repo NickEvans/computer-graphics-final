@@ -99,8 +99,10 @@
 
             document.addEventListener('mouseup', function() {
                 //selected.material.color = new THREE.Color('white');
-                snapSwap(selected);
-                selected = null;
+                if(selected != null) {
+                    snapSwap(selected);
+                    selected = null;
+                }
             });
 
             document.addEventListener('mousemove', onMouseMove, false);
@@ -117,6 +119,8 @@
                     //Lock to y-axis
                     selected.position.x = 0;
                     selected.position.z = 0;
+
+                    snapSwap(selected);
                 } else {
                     var hits = ray.intersectObjects(sceneObjects);
                     if(hits.length > 0) {
@@ -129,6 +133,12 @@
             function animate() {
                 requestAnimationFrame(animate);
 
+                //Animate swapping to correct ordering
+                for(let i=0; i<4; i++) {
+                    if(objOrder[i].position.y != i) {
+                        objOrder[i].position.lerp(new THREE.Vector3(0, i, 0), 0.2);
+                    }
+                }
                 renderer.render(scene, camera);
             }
 
@@ -139,10 +149,10 @@
 
                 //Swap recorded order
                 let temp = objOrder[pos];
-                temp.position.y = objOrder.indexOf(obj);
+                //temp.position.y = objOrder.indexOf(obj);
                 objOrder[objOrder.indexOf(obj)] = temp;
                 objOrder[pos] = obj;
-                
+
                 //console.log("("+pos.x+", "+pos.y+", "+pos.z+")");
             }
 
