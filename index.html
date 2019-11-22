@@ -25,7 +25,7 @@
             var selected = null;
 
             var scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x949998);
+            scene.background = new THREE.Color(0xFAFAE4);
 
             //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             var camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
@@ -55,10 +55,10 @@
             camera.updateMatrixWorld();
             
             var colors = [];
-            colors.push(new THREE.Color(0xBF1304));
-            colors.push(new THREE.Color(0xBF4904));
-            colors.push(new THREE.Color(0xBF7E04));
-            colors.push(new THREE.Color(0xBFA004));
+            colors.push(new THREE.Color(0xA8E6CF));
+            colors.push(new THREE.Color(0xDCEDC1));
+            colors.push(new THREE.Color(0xFFD3B6));
+            colors.push(new THREE.Color(0xFFAAA5));
 
             var sceneObjects = [];
             var objOrder = []; //Record of stacked order
@@ -86,6 +86,8 @@
                     color: 0xffffff
                 })
             );
+            plane.material.transparent = true;
+            plane.material.opacity = 0;
             scene.add(plane);
 
             //Lighting
@@ -153,7 +155,7 @@
                 controls.update();
 
                 //Animate swapping to correct ordering
-                for(let i=0; i<4; i++) {
+                for(let i=0; i<objOrder.length; i++) {
                     let obj = objOrder[i];
                     if(obj != selected) {
                         if(obj.position.y != i) {
