@@ -25,6 +25,8 @@
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0x949998);
 
+            var eases = [0.1, 0.1, 0.1, 0.1];
+
             //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             //var camera = new THREE.OrthographicCamera( WIDTH/-150, WIDTH/150, HEIGHT/150, HEIGHT/-150, 0, 5);
             var camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
@@ -65,8 +67,6 @@
             );
             scene.add(plane);
 
-
-
             //Lighting
             var light = new THREE.PointLight();
             light.position.set(5, 5, 5);
@@ -93,7 +93,8 @@
                     offset.copy(hits[0].point).sub(selected.position);
 
                     //For debugging:
-                   // selected.material.color = new THREE.Color ('red');
+                    selected.material.transparent = true;
+                    selected.material.opacity = 0.6;
                 }
             });
 
@@ -101,6 +102,7 @@
                 //selected.material.color = new THREE.Color('white');
                 if(selected != null) {
                     snapSwap(selected);
+                    selected.material.transparent = false;
                     selected = null;
                 }
             });
@@ -136,10 +138,15 @@
                 //Animate swapping to correct ordering
                 for(let i=0; i<4; i++) {
                     if(objOrder[i].position.y != i) {
-                        objOrder[i].position.lerp(new THREE.Vector3(0, i, 0), 0.2);
+                        objOrder[i].position.lerp(new THREE.Vector3(0, i, 0), OutQuadratic(0.08));
                     }
                 }
                 renderer.render(scene, camera);
+            }
+
+            function OutQuadratic(t) {
+                let s = t - 1;
+                return 1-s*s;
             }
 
             function snapSwap(obj) {
