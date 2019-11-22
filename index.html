@@ -19,7 +19,7 @@
             var viewSize = 10;
             var mouse = new THREE.Vector2();
             var ray = new THREE.Raycaster();
-            //var offset = new THREE.Vector3();
+            var offset = new THREE.Vector3();
             var selected = null;
 
             var scene = new THREE.Scene();
@@ -36,17 +36,6 @@
             renderer.setSize(WIDTH, HEIGHT);
             document.body.appendChild(renderer.domElement);
 
-            //Objects
-            /*
-            var geometry = new THREE.BoxGeometry(1, 1, 1);
-            var material = new THREE.MeshPhongMaterial( );
-            var cube1 = new THREE.Mesh(geometry, material);
-            var cube2 = new THREE.Mesh(geometry, material);
-            cube2.position.set(0, 1, 0);
-            scene.add(cube1);
-            scene.add(cube2);
-            */
-
             var colors = [];
             colors.push(new THREE.Color(0xBF1304));
             colors.push(new THREE.Color(0xBF4904));
@@ -54,6 +43,7 @@
             colors.push(new THREE.Color(0xBFA004));
 
             var sceneObjects = [];
+            var objOrder = []; //Record of stacked order
             for(let i=0; i<4; i++) {
                 let c = new THREE.Mesh(
                     new THREE.BoxGeometry(1, 1, 1),
@@ -62,9 +52,10 @@
                 c.position.set(0, i, 0);
                 scene.add(c);
                 sceneObjects.push(c);
+                objOrder.push(c);
             }
 
-            //Plane to lock object movement
+            //Aid object movement
             var plane = new THREE.Mesh(
                 new THREE.PlaneBufferGeometry(500, 500, 8, 8),
                 new THREE.MeshBasicMaterial({
@@ -74,11 +65,7 @@
             );
             scene.add(plane);
 
-            //Snap positions of the objects
-            var objOrder = [];
-            for(let i=0; i<4; i++) {
-                
-            }
+
 
             //Lighting
             var light = new THREE.PointLight();
@@ -95,8 +82,15 @@
 
                 if(hits.length > 0) {
                     selected = hits[0].object;
+
+                    //A new raycast is needed for the correct offset
+                    mouse.set(0, -(event.clientY/HEIGHT)*2 + 1);
+                    ray.setFromCamera(mouse, camera);
                     var hits = ray.intersectObject(plane);
-                    //offset.copy(hits[0].point).sub(plane.position);
+                    //var temp = new THREE.Vector3();
+                    //temp.copy(hits[0].point);
+                    //temp.x = 0;
+                    offset.copy(hits[0].point).sub(selected.position);
 
                     //For debugging:
                    // selected.material.color = new THREE.Color ('red');
@@ -117,7 +111,7 @@
 
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
-                    selected.position.copy(hits[0].point);
+                    selected.position.copy(hits[0].point.sub(offset));
 
                     //Lock to y-axis
                     selected.position.x = 0;
