@@ -157,7 +157,8 @@
 
                 controls.update();
 
-                //Animate swapping to correct ordering
+                //Interpolate each object to its placing
+                /*
                 for(let i=0; i<objOrder.length; i++) {
                     let obj = objOrder[i];
                     var done = false;
@@ -169,7 +170,17 @@
                             done = done && true;
                         }
                     }
-                }
+                }*/
+
+                var done = false;
+                objOrder.forEach(function(obj, i) {
+                    if(obj != selected) {
+                        obj.position.lerp(new THREE.Vector3(0, i, 0), OutQuadratic(0.08));
+                        done = false;
+                    } else {
+                        done = done && true;
+                    }
+                });
 
                 animFinished = done;
 
