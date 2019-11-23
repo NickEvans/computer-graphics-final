@@ -9,7 +9,7 @@
         </style>
     </head>
     <body>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r79/three.min.js"></script>
+        <script src="js/three.min.js"></script>
         <script src="https://threejs.org/build/three.min.js"></script>
         <script src="https://threejs.org/examples/js/loaders/OBJLoader.js"></script>
         <script src='js/threex.basiclighting.js'></script>
@@ -52,7 +52,7 @@
                     //console.log("Camera position: (" + camera.position.x + ", " + camera.position.y + "," + camera.position.z + ")");
                 }
             );
-            controls.maxPolarAngle = Math.PI/3;
+            //controls.maxPolarAngle = Math.PI/3;
             controls.minPolarAngle = Math.PI/3;
             controls.minAzimuthAngle = -Math.PI/8;
             controls.maxAzimuthAngle = Math.PI/2.2;
@@ -105,18 +105,18 @@
             ));
 
             function createStencilGroup(object, plane, rendOrder) {
-                let group = new THREE.Group();
-                let material = new THREE.MeshBasicMaterial();
+                var group = new THREE.Group();
+                var material = new THREE.MeshBasicMaterial();
 
                 //Basic stencil parameters
                 material.depthWrite = false;
-                material.depthTests = false;
-                material.colorWrite = false;
-                material.stencilWrite = false;
-                material.stencilFunc = THREE.AlwaysStencilFunc;
+				material.depthTest = false;
+				material.colorWrite = false;
+				material.stencilWrite = true;
+				material.stencilFunc = THREE.AlwaysStencilFunc;
 
                 //Backsides parameters
-                let materialBack = material.clone();
+                var materialBack = material.clone();
                 materialBack.side = THREE.BackSide;
                 materialBack.clippingPlanes = [ plane ];
                 materialBack.stencilFail = THREE.IncrementWrapStencilOp;
@@ -124,7 +124,7 @@
                 materialBack.stencilZPass = THREE.IncrementWrapStencilOp;
 
                 //Frontside parameters
-                let materialFront = material.clone();
+                var materialFront = material.clone();
                 materialFront.side = THREE.FrontSide;
                 materialFront.clippingPlanes = [ plane ];
                 materialFront.stencilFail = THREE.DecrementWrapStencilOp;
@@ -132,8 +132,8 @@
                 materialFront.stencilZPass = THREE.DecrementWrapStencilOp;
 
                 //Create front + back mesh group
-                let meshBack = new THREE.Mesh(object, materialBack);
-                let meshFront = new THREE.Mesh(object, materialFront);
+                var meshBack = new THREE.Mesh(object, materialBack);
+                var meshFront = new THREE.Mesh(object, materialFront);
                 meshBack.renderOrder = rendOrder;
                 meshFront.renderOrder = rendOrder;
                 group.add(meshBack);
@@ -143,6 +143,7 @@
             }
 
             var meshPlanes = [];
+            var planeRenderCounter = 0;
 
             function addMeshes(mod) {
                 
@@ -161,31 +162,24 @@
                         i + 0
                     );
 
-                    //The object mesh sliced by the plane set
-                    var c = new THREE.Mesh(
-                        mod.geometry,
-                        new THREE.MeshLambertMaterial( { 
-                            color: objColor,
-                            //shininess: 0,
-                            clippingPlanes: clipPlanes[i]
-                        } )
-                    );
-                    c.position.set(0,-i,0); //An offset so each slice is different
-                    group.add(c);
+                    
 
                     /// STENCIL PLANE RENDERING
                     var meshPlaneGroup = new THREE.Group;
                     //var meshPlanes = [];
-                    var meshPlaneGeometry = new THREE.PlaneBufferGeometry(4, 4);
+                    var meshPlaneGeometry = new THREE.PlaneBufferGeometry(1, 1);
 
                     for(var j=0; j<2; j++) {
-                        var planeMeshGroup = new THREE.Group();
+                        //var planeMeshGroup = new THREE.Group();
                         var plane = clipPlanes[i][j];
-                        var meshStencilGroup = createStencilGroup(mod.geometry, plane, i + j + 1);
+                        var meshStencilGroup = createStencilGroup(mod.geometry, plane, planeRenderCounter + j + 1);
+                        meshStencilGroup.position.set(0,-i,0);
 
                         var meshPlaneMaterial = new THREE.MeshStandardMaterial({
                             color: 0xE91E63,
                             stencilWrite: true,
+                            colorWrite: true,
+                            depthWrite: true,
 							stencilRef: 0,
 							stencilFunc: THREE.NotEqualStencilFunc,
 							stencilFail: THREE.ReplaceStencilOp,
@@ -198,7 +192,9 @@
                             renderer.clearStencil();
                         }
 
-                        //Render order?
+                        meshPlaneMaterial.renderOrder = planeRenderCounter + j + 1.1;
+                        planeRenderCounter++;
+                        
                         group.add(meshStencilGroup);
                         meshPlaneGroup.add(meshPlane);
                         meshPlanes.push(meshPlane);
@@ -207,14 +203,34 @@
                         
                     }
 
+                    //The object mesh sliced by the plane set
+                    var c = new THREE.Mesh(
+                        mod.geometry,
+                        new THREE.MeshLambertMaterial( { 
+                            color: objColor,
+                            //shininess: 0,
+                            clippingPlanes: clipPlanes[i],
+                            clipShadows: true,
+					        shadowSide: THREE.DoubleSide
+                        } )
+                    );
+                    
+                    c.position.set(0,-i,0); //An offset so each slice is different
+                    group.add(c);
+
                     //Prevents banding where meshes overlap
                     c.material.polygonOffset = true;
                     c.material.polygonOffsetFactor = -0.1*i;
+
+                    //c.material.renderOrder = i;
                     
                     //Scale the slice to size
+
+                    /*
                     let bbox = new THREE.Box3().setFromObject(c);
                     let size = bbox.getSize();
                     c.scale.set(4 / size.y, 4 / size.y, 4 / size.y);
+                    */
 
                     sceneObjects.push(c);
                     objOrder.push(group);
