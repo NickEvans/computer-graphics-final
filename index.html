@@ -99,7 +99,16 @@
             var lighting = new THREEx.ThreePointsLighting();
             scene.add(lighting);
 
-            document.addEventListener('mousedown', function(){ 
+            document.addEventListener('mousedown', mouseDown);
+            document.addEventListener('mouseup', mouseUp);
+            document.addEventListener('mousemove', onMouseMove, false);
+
+            //Touch bindings
+            document.addEventListener('touchstart', mouseDown, false);
+            document.addEventListener('touchend', mouseUp, false);
+            document.addEventListener('touchmove', onMouseMove, false);
+
+            function mouseDown(event) {
                 event.preventDefault();
 
                 mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
@@ -118,18 +127,16 @@
                     var hits = ray.intersectObject(plane);
                     offset.copy(hits[0].point).sub(selected.position);
                 }
-            });
+            }
 
-            document.addEventListener('mouseup', function() {
+            function mouseUp(event) {
                 if(selected != null) {
                     snapSwap(selected);
                     selected.material.transparent = false;
                     selected = null;
                     controls.enabled = true;
                 }
-            });
-
-            document.addEventListener('mousemove', onMouseMove, false);
+            }
 
             function onMouseMove(event) { 
                 event.preventDefault();
@@ -150,6 +157,22 @@
 
                     snapSwap(selected);
                 }
+            }
+            
+            function OutQuadratic(t) {
+                let s = t - 1;
+                return 1-s*s;
+            }
+
+            function snapSwap(obj) {
+                //Physically snap
+                let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
+                //obj.position.copy(new THREE.Vector3(0, pos, 0));
+
+                //Swap recorded order
+                let temp = objOrder[pos];
+                objOrder[objOrder.indexOf(obj)] = temp;
+                objOrder[pos] = obj;
             }
 
             function animate() {
@@ -176,21 +199,6 @@
                 renderer.render(scene, camera);
             }
 
-            function OutQuadratic(t) {
-                let s = t - 1;
-                return 1-s*s;
-            }
-
-            function snapSwap(obj) {
-                //Physically snap
-                let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
-                //obj.position.copy(new THREE.Vector3(0, pos, 0));
-
-                //Swap recorded order
-                let temp = objOrder[pos];
-                objOrder[objOrder.indexOf(obj)] = temp;
-                objOrder[pos] = obj;
-            }
 
             animate();
         </script>
