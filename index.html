@@ -99,8 +99,8 @@
             var lighting = new THREEx.ThreePointsLighting();
             scene.add(lighting);
 
-            document.addEventListener('mousedown', mouseDown);
-            document.addEventListener('mouseup', mouseUp);
+            document.addEventListener('mousedown', mouseDown, false);
+            document.addEventListener('mouseup', mouseUp, false);
             document.addEventListener('mousemove', onMouseMove, false);
 
             //Touch bindings
