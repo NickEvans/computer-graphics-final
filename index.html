@@ -101,9 +101,10 @@
             var lighting = new THREEx.ThreePointsLighting();
             scene.add(lighting);
 
-            document.addEventListener('mousedown', mouseDown, false);
-            document.addEventListener('mouseup', mouseUp, false);
-            document.addEventListener('mousemove', onMouseMove, false);
+            document.addEventListener("mousedown", mouseDown, false);
+            document.addEventListener("mouseup", mouseUp, false);
+            document.addEventListener("mousemove", onMouseMove, false);
+            window.addEventListener("resize", handleResize, false);
 
             function mouseDown(event) {
                 event.preventDefault();
@@ -164,6 +165,21 @@
                 let temp = objOrder[pos];
                 objOrder[objOrder.indexOf(obj)] = temp;
                 objOrder[pos] = obj;
+            }
+
+            function handleResize() {
+                WIDTH = window.innerWidth;
+                HEIGHT = window.innerHeight;
+                
+                aspect = WIDTH / HEIGHT;
+                camera.left = viewSize * aspect / - 2;
+                camera.right = viewSize * aspect / 2;
+                camera.top = viewSize / 2;
+                camera.bottom = - viewSize / 2;
+
+                camera.updateProjectionMatrix();
+                renderer.setSize(WIDTH, HEIGHT);
+                renderer.render(scene, camera);
             }
 
             function animate() {
