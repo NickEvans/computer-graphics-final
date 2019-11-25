@@ -57,6 +57,18 @@
             camera.updateMatrixWorld();
 
             var loader = new THREE.OBJLoader();
+            loader.load(
+                "models/einstein.obj",
+                function(obj) {
+                    //TODO: Add object
+                },
+                function(xhr) {
+                    if(xhr.lengthComputable) {
+                        var percentComplete = xhr.loaded / xhr.total * 100;
+                        console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
+                    }
+                }
+            );
             
             
             var colors = [];
