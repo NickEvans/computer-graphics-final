@@ -38,7 +38,7 @@
             
             var renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(WIDTH, HEIGHT);
-            //renderer.localClippingEnabled = true;
+            renderer.localClippingEnabled = true;
             document.body.appendChild(renderer.domElement);
 
             var controls = new THREE.OrbitControls (camera, renderer.domElement);
@@ -67,10 +67,7 @@
             colors.push(new THREE.Color(0xFFAAA5));
 
             
-            var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
-            var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
-            clipPlanes.push(localPlaneHi);
-            clipPlanes.push(localPlaneLo);
+            
             
 
             var einsteinMaterial = new THREE.MeshPhongMaterial( {
@@ -126,11 +123,15 @@
             function addMeshes(mod) {
                 
                 for(let i=0; i<4; i++) {
+                    clipPlanes[i] =
+                    
+                    new THREE.Plane( new THREE.Vector3(0, -1, 0), i-1);
+
                     let c = new THREE.Mesh(
                         mod.geometry,
                         new THREE.MeshPhongMaterial( { 
                             color: colors[i],
-                            clippingPlanes: clipPlanes
+                            clippingPlanes: [clipPlanes[i]]
                         } )
                     );
 
@@ -274,7 +275,7 @@
                         done = done && true;
                     } else {
                         done = false;
-                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
                     }
                 });
                 animFinished = done;
