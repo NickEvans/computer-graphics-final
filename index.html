@@ -11,6 +11,7 @@
     <body>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r79/three.min.js"></script>
         <script src="https://threejs.org/build/three.min.js"></script>
+        <script src="https://threejs.org/examples/js/loaders/OBJLoader.js"></script>
         <script src='js/threex.basiclighting.js'></script>
         <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
         <script src='js/threex.basiclighting.js'></script>
@@ -41,7 +42,7 @@
                 function(){
                     camera.updateProjectionMatrix();
                     camera.updateMatrixWorld();
-                    console.log("Camera position: (" + camera.position.x + ", " + camera.position.y + "," + camera.position.z + ")");
+                    //console.log("Camera position: (" + camera.position.x + ", " + camera.position.y + "," + camera.position.z + ")");
                 }
             );
             controls.maxPolarAngle = Math.PI/3;
@@ -54,6 +55,9 @@
             controls.update();
             camera.updateProjectionMatrix();
             camera.updateMatrixWorld();
+
+            var loader = new THREE.OBJLoader();
+            
             
             var colors = [];
             colors.push(new THREE.Color(0xA8E6CF));
@@ -124,7 +128,7 @@
 
             function mouseUp(event) {
                 if(selected != null) {
-                    snapSwap(selected);
+                    updateOrder(selected);
                     selected.material.transparent = false;
                     selected = null;
                     controls.enabled = true;
@@ -148,12 +152,12 @@
                     selected.position.x = 0;
                     selected.position.z = 0;
 
-                    snapSwap(selected);
+                    updateOrder(selected);
                 }
             }
 
-            function snapSwap(obj) {
-                //Physically snap
+            function updateOrder(obj) {
+                //Update position
                 let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
 
                 //Swap recorded order
