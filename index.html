@@ -25,6 +25,8 @@
             var offset = new THREE.Vector3();
             var selected = null;
 
+            var clipPlanes = [];
+
             var animFinished = false;
 
             var scene = new THREE.Scene();
@@ -35,6 +37,7 @@
             
             var renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(WIDTH, HEIGHT);
+            renderer.localClippingEnabled = true;
             document.body.appendChild(renderer.domElement);
 
             var controls = new THREE.OrbitControls (camera, renderer.domElement);
@@ -55,21 +58,6 @@
             controls.update();
             camera.updateProjectionMatrix();
             camera.updateMatrixWorld();
-
-            var loader = new THREE.OBJLoader();
-            loader.load(
-                "models/einstein.obj",
-                function(obj) {
-                    //TODO: Add object
-                },
-                function(xhr) {
-                    if(xhr.lengthComputable) {
-                        var percentComplete = xhr.loaded / xhr.total * 100;
-                        console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
-                    }
-                }
-            );
-            
             
             var colors = [];
             colors.push(new THREE.Color(0xA8E6CF));
@@ -105,6 +93,38 @@
                 })
             );
             scene.add(plane);
+
+            var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
+            var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
+            clipPlanes.push(localPlaneHi);
+            clipPlanes.push(localPlaneLo);
+
+            var einsteinMaterial = new THREE.MeshPhongMaterial( {
+                color: 0xDCEDC1,
+                clippingPlanes: clipPlanes
+            } );
+            var loader = new THREE.OBJLoader();
+            loader.load(
+                "models/einstein.obj",
+                function(obj) {
+                    obj.traverse(function(child) {
+                        if(child instanceof THREE.Mesh) {
+                            child.material = einsteinMaterial;
+                        }
+                    });
+
+                    obj.scale.set(0.2, 0.2, 0.2);
+                    obj.rotation.x = Math.PI/180 * -90;
+
+                    scene.add(obj);
+                },
+                function(xhr) {
+                    if(xhr.lengthComputable) {
+                        var percentComplete = xhr.loaded / xhr.total * 100;
+                        console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
+                    }
+                }
+            );   
 
             //Lighting
             var light = new THREE.PointLight();
