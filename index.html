@@ -26,10 +26,14 @@
             var selected = null;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             var clipPlanes = [];
             var model = new THREE.Mesh();
 
             var animFinished = false;
+=======
+            var animFinished = false; //If animations have finished playing;
+>>>>>>> parent of a9ee016... Cleanup
 =======
             var animFinished = false; //If animations have finished playing;
 >>>>>>> parent of a9ee016... Cleanup
@@ -196,6 +200,11 @@
             document.addEventListener('touchend', mouseUp, false);
             document.addEventListener('touchmove', onMouseMove, false);
 
+            //Touch bindings
+            document.addEventListener('touchstart', mouseDown, false);
+            document.addEventListener('touchend', mouseUp, false);
+            document.addEventListener('touchmove', onMouseMove, false);
+
             function mouseDown(event) {
                 event.preventDefault();
 
@@ -305,8 +314,12 @@
                         done = false;
                     } else {
 <<<<<<< HEAD
+<<<<<<< HEAD
                         done = false;
                         //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+=======
+                        done = done && true;
+>>>>>>> parent of a9ee016... Cleanup
 =======
                         done = done && true;
 >>>>>>> parent of a9ee016... Cleanup
