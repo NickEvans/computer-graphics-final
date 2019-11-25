@@ -25,10 +25,14 @@
             var offset = new THREE.Vector3();
             var selected = null;
 
+<<<<<<< HEAD
             var clipPlanes = [];
             var model = new THREE.Mesh();
 
             var animFinished = false;
+=======
+            var animFinished = false; //If animations have finished playing;
+>>>>>>> parent of a9ee016... Cleanup
 
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0xFAFAE4);
@@ -51,6 +55,7 @@
             );
             controls.maxPolarAngle = Math.PI/3;
             controls.minPolarAngle = Math.PI/3;
+
             controls.minAzimuthAngle = -Math.PI/8;
             controls.maxAzimuthAngle = Math.PI/2.2;
 
@@ -177,6 +182,7 @@
             var light = new THREE.PointLight();
             light.position.set(5, 5, 5);
             scene.add(light);
+
             var lighting = new THREEx.ThreePointsLighting();
             scene.add(lighting);
 
@@ -184,6 +190,11 @@
             document.addEventListener("mouseup", mouseUp, false);
             document.addEventListener("mousemove", onMouseMove, false);
             window.addEventListener("resize", handleResize, false);
+
+            //Touch bindings
+            document.addEventListener('touchstart', mouseDown, false);
+            document.addEventListener('touchend', mouseUp, false);
+            document.addEventListener('touchmove', onMouseMove, false);
 
             function mouseDown(event) {
                 event.preventDefault();
@@ -235,10 +246,16 @@
                     updateOrder(selected);
                 }
             }
+            
+            function OutQuadratic(t) {
+                let s = t - 1;
+                return 1-s*s;
+            }
 
             function updateOrder(obj) {
                 //Update position
                 let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
+                //obj.position.copy(new THREE.Vector3(0, pos, 0));
 
                 //Swap recorded order
                 let temp = objOrder[pos];
@@ -266,25 +283,43 @@
 
                 controls.update();
 
-                var done = true;
                 //Interpolate each object to its placing
+                /*
+                for(let i=0; i<objOrder.length; i++) {
+                    let obj = objOrder[i];
+                    var done = false;
+                    if(obj != selected) {
+                        if(obj.position.y != i) {
+                            obj.position.lerp(new THREE.Vector3(0, i, 0), OutQuadratic(0.08));
+                            done = done && false;
+                        } else {
+                            done = done && true;
+                        }
+                    }
+                }*/
+
+                var done = false;
                 objOrder.forEach(function(obj, i) {
-                    if(obj == selected) {
+                    if(obj != selected) {
+                        obj.position.lerp(new THREE.Vector3(0, i, 0), OutQuadratic(0.08));
                         done = false;
-                    } else if(obj.position.y == i) {
-                        done = done && true;
                     } else {
+<<<<<<< HEAD
                         done = false;
                         //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+=======
+                        done = done && true;
+>>>>>>> parent of a9ee016... Cleanup
                     }
                 });
+
                 animFinished = done;
 
                 renderer.render(scene, camera);
             }
 
-            animate();
 
+            animate();
         </script>
     </body>
 </html>
