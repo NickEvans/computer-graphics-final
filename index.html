@@ -66,12 +66,11 @@
             colors.push(new THREE.Color(0xFFD3B6));
             colors.push(new THREE.Color(0xFFAAA5));
 
-            /*
+            
             var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
             var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
             clipPlanes.push(localPlaneHi);
             clipPlanes.push(localPlaneLo);
-            */
             
 
             var einsteinMaterial = new THREE.MeshPhongMaterial( {
@@ -126,18 +125,12 @@
             var objOrder = []; //Record of stacked order
             function addMeshes(mod) {
                 
-                
                 for(let i=0; i<4; i++) {
-                    clipPlanes[i] = [];
-                    var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), i+1 );
-                    var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), i+2);
-                    clipPlanes[i].push(localPlaneHi);
-                    clipPlanes[i].push(localPlaneLo);
                     let c = new THREE.Mesh(
                         mod.geometry,
                         new THREE.MeshPhongMaterial( { 
                             color: colors[i],
-                            clippingPlanes: clipPlanes[i]
+                            clippingPlanes: clipPlanes
                         } )
                     );
 
@@ -150,13 +143,8 @@
                     c.position.set(0, 0, 0);
                     c.scale.set(0.2, 0.2, 0.2);
                     c.rotation.x = Math.PI/180 * -90;
-                    
-                    /*var group = new THREE.Group();
-                    group.add(localPlaneHi);
-                    group.add(localPlaneLo);
-                    group.add(c);*/
-                    scene.add(c);
 
+                    scene.add(c);
                     sceneObjects.push(c);
                     objOrder.push(c);
                     console.log("Something was added");
@@ -186,7 +174,7 @@
 
             //Lighting
             var light = new THREE.PointLight();
-            light.position.set(25, 25, 25);
+            light.position.set(5, 5, 5);
             scene.add(light);
             var lighting = new THREEx.ThreePointsLighting();
             scene.add(lighting);
@@ -204,7 +192,6 @@
                 var hits = ray.intersectObjects(sceneObjects);
 
                 if(hits.length > 0) {
-                    console.log("Hit!");
                     selected = hits[0].object;
                     selected.material.transparent = true;
                     selected.material.opacity = 0.6;
@@ -287,7 +274,7 @@
                         done = done && true;
                     } else {
                         done = false;
-                        //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
                     }
                 });
                 animFinished = done;
