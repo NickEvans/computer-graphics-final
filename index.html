@@ -26,6 +26,7 @@
             var selected = null;
 
             var clipPlanes = [];
+            var model = new THREE.Mesh();
 
             var animFinished = false;
 
@@ -37,7 +38,7 @@
             
             var renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(WIDTH, HEIGHT);
-            renderer.localClippingEnabled = true;
+            //renderer.localClippingEnabled = true;
             document.body.appendChild(renderer.domElement);
 
             var controls = new THREE.OrbitControls (camera, renderer.domElement);
@@ -64,7 +65,41 @@
             colors.push(new THREE.Color(0xDCEDC1));
             colors.push(new THREE.Color(0xFFD3B6));
             colors.push(new THREE.Color(0xFFAAA5));
+            var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
+            var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
+            clipPlanes.push(localPlaneHi);
+            clipPlanes.push(localPlaneLo);
 
+            var einsteinMaterial = new THREE.MeshPhongMaterial( {
+                color: colors[1],
+                clippingPlanes: clipPlanes
+            } );
+            var loader = new THREE.OBJLoader();
+            loader.load(
+                "models/einstein.obj",
+                function(obj) {
+                    obj.traverse(function(child) {
+                        if(child instanceof THREE.Mesh) {
+                            //child.material = einsteinMaterial;
+                            var mod = child.clone();
+                            addMeshes(mod);
+                        }
+                    });
+
+                    //obj.scale.set(0.2, 0.2, 0.2);
+                    //obj.rotation.x = Math.PI/180 * -90;
+
+                    
+                    //scene.add(obj);
+                },
+                function(xhr) {
+                    if(xhr.lengthComputable) {
+                        var percentComplete = xhr.loaded / xhr.total * 100;
+                        console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
+                    }
+                }
+            );   
+            /*
             var sceneObjects = [];
             var objOrder = []; //Record of stacked order
             for(let i=0; i<4; i++) {
@@ -82,6 +117,39 @@
                 sceneObjects.push(c);
                 objOrder.push(c);
             }
+            */
+            var sceneObjects = [];
+            var objOrder = []; //Record of stacked order
+            function addMeshes(mod) {
+                
+                for(let i=0; i<4; i++) {
+                    let c = new THREE.Mesh(
+                        mod.geometry,
+                        new THREE.MeshPhongMaterial( { color: colors[i] } )
+                    );
+
+                    //Fix banding as meshes overlap
+                    c.material.polygonOffset = true;
+                    c.material.polygonOffsetFactor = -0.1*i;
+
+                    c.position.set(0, i, 0);
+                    c.scale.set(0.2, 0.2, 0.2);
+                    c.rotation.x = Math.PI/180 * -90;
+
+                    scene.add(c);
+                    sceneObjects.push(c);
+                    objOrder.push(c);
+                    console.log("Something was added");
+                }
+
+                for(var i=0; i<4; i++) {
+                    console.log("obj " + i + " positioned at " +
+                    objOrder[i].position.x + ", " +
+                    objOrder[i].position.y + ", " + 
+                    objOrder[i].position.z + ".");
+                }
+            }
+
 
             //Aid object movement
             var plane = new THREE.Mesh(
@@ -94,37 +162,7 @@
             );
             scene.add(plane);
 
-            var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
-            var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
-            clipPlanes.push(localPlaneHi);
-            clipPlanes.push(localPlaneLo);
 
-            var einsteinMaterial = new THREE.MeshPhongMaterial( {
-                color: 0xDCEDC1,
-                clippingPlanes: clipPlanes
-            } );
-            var loader = new THREE.OBJLoader();
-            loader.load(
-                "models/einstein.obj",
-                function(obj) {
-                    obj.traverse(function(child) {
-                        if(child instanceof THREE.Mesh) {
-                            child.material = einsteinMaterial;
-                        }
-                    });
-
-                    obj.scale.set(0.2, 0.2, 0.2);
-                    obj.rotation.x = Math.PI/180 * -90;
-
-                    scene.add(obj);
-                },
-                function(xhr) {
-                    if(xhr.lengthComputable) {
-                        var percentComplete = xhr.loaded / xhr.total * 100;
-                        console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
-                    }
-                }
-            );   
 
             //Lighting
             var light = new THREE.PointLight();
