@@ -65,14 +65,17 @@
             colors.push(new THREE.Color(0xDCEDC1));
             colors.push(new THREE.Color(0xFFD3B6));
             colors.push(new THREE.Color(0xFFAAA5));
+
+            
             var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
             var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
             clipPlanes.push(localPlaneHi);
             clipPlanes.push(localPlaneLo);
+            
 
             var einsteinMaterial = new THREE.MeshPhongMaterial( {
                 color: colors[1],
-                clippingPlanes: clipPlanes
+                //clippingPlanes: clipPlanes
             } );
             var loader = new THREE.OBJLoader();
             loader.load(
@@ -125,14 +128,19 @@
                 for(let i=0; i<4; i++) {
                     let c = new THREE.Mesh(
                         mod.geometry,
-                        new THREE.MeshPhongMaterial( { color: colors[i] } )
+                        new THREE.MeshPhongMaterial( { 
+                            color: colors[i],
+                            clippingPlanes: clipPlanes
+                        } )
                     );
 
                     //Fix banding as meshes overlap
                     c.material.polygonOffset = true;
                     c.material.polygonOffsetFactor = -0.1*i;
 
-                    c.position.set(0, i, 0);
+                    
+
+                    c.position.set(0, 0, 0);
                     c.scale.set(0.2, 0.2, 0.2);
                     c.rotation.x = Math.PI/180 * -90;
 
