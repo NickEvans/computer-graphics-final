@@ -25,7 +25,7 @@
             var offset = new THREE.Vector3();
             var selected = null;
 
-            var clipPlanes = [];
+            var clipPlaneList = new Array(4);
             var model = new THREE.Mesh();
 
             var animFinished = false;
@@ -38,7 +38,7 @@
             
             var renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(WIDTH, HEIGHT);
-            //renderer.localClippingEnabled = true;
+            renderer.localClippingEnabled = true;
             document.body.appendChild(renderer.domElement);
 
             var controls = new THREE.OrbitControls (camera, renderer.domElement);
@@ -67,11 +67,6 @@
             colors.push(new THREE.Color(0xFFAAA5));
 
             
-            var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
-            var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
-            clipPlanes.push(localPlaneHi);
-            clipPlanes.push(localPlaneLo);
-            
 
             var einsteinMaterial = new THREE.MeshPhongMaterial( {
                 color: colors[1],
@@ -79,7 +74,7 @@
             } );
             var loader = new THREE.OBJLoader();
             loader.load(
-                "models/einstein.obj",
+                "models/knight.obj",
                 function(obj) {
                     obj.traverse(function(child) {
                         if(child instanceof THREE.Mesh) {
@@ -126,11 +121,18 @@
             function addMeshes(mod) {
                 
                 for(let i=0; i<4; i++) {
+                    clipPlaneList[i] = new Array(2);
+                    clipPlaneList[i][0] = new THREE.Plane( new THREE.Vector3(0, 1, 0), 2.2-(-i*0.6) );
+                    clipPlaneList[i][1] = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.2-(i*0.6+0.6));
+
                     let c = new THREE.Mesh(
                         mod.geometry,
                         new THREE.MeshPhongMaterial( { 
                             color: colors[i],
-                            clippingPlanes: clipPlanes
+                            shininess: 0,
+                            //flatShading: true,
+                            //specular: 0x0,
+                            clippingPlanes: clipPlaneList[i]
                         } )
                     );
 
@@ -141,13 +143,12 @@
                     
 
                     c.position.set(0, 0, 0);
-                    c.scale.set(0.2, 0.2, 0.2);
-                    c.rotation.x = Math.PI/180 * -90;
+                    //c.scale.set(0.2, 0.2, 0.2);
+                    //c.rotation.x = Math.PI/180 * -90;
 
                     scene.add(c);
                     sceneObjects.push(c);
                     objOrder.push(c);
-                    console.log("Something was added");
                 }
 
                 for(var i=0; i<4; i++) {
@@ -173,7 +174,7 @@
 
 
             //Lighting
-            var light = new THREE.PointLight();
+            var light = new THREE.PointLight(0xffffff, 0.5);
             light.position.set(5, 5, 5);
             scene.add(light);
             var lighting = new THREEx.ThreePointsLighting();
@@ -274,7 +275,7 @@
                         done = done && true;
                     } else {
                         done = false;
-                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
                     }
                 });
                 animFinished = done;
