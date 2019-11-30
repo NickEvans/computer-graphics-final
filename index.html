@@ -66,13 +66,6 @@
             colors.push(new THREE.Color(0xFFD3B6));
             colors.push(new THREE.Color(0xFFAAA5));
 
-            
-            var localPlaneHi = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.8 );
-            var localPlaneLo = new THREE.Plane( new THREE.Vector3(0, -1, 0), 1.8);
-            clipPlanes.push(localPlaneHi);
-            clipPlanes.push(localPlaneLo);
-            
-
             var einsteinMaterial = new THREE.MeshPhongMaterial( {
                 color: colors[1],
                 //clippingPlanes: clipPlanes
@@ -168,7 +161,6 @@
                     scene.add(c);
                     sceneObjects.push(c);
                     objOrder.push(c);
-                    console.log("Something was added");
                 }
 
                 for(var i=0; i<4; i++) {
@@ -178,7 +170,6 @@
                     objOrder[i].position.z + ".");
                 }
             }
-
 
             //Aid object movement
             var plane = new THREE.Mesh(
@@ -190,8 +181,6 @@
                 })
             );
             scene.add(plane);
-
-
 
             //Lighting
             var light = new THREE.PointLight();
@@ -214,6 +203,11 @@
                 var hits = ray.intersectObjects(sceneObjects);
 
                 if(hits.length > 0) {
+                    /* TODO 
+                    Check if the point is between clipping planes of the object's material, and if not, discard collision and check the next one
+
+                    This will be done in a while loop instead
+                    */
                     selected = hits[0].object;
                     selected.material.transparent = true;
                     selected.material.opacity = 0.6;
@@ -283,6 +277,9 @@
             }
 
             function animate() {
+                /* TODO
+                Change the animation to move groups of objects with their clipping planes.
+                */
                 requestAnimationFrame(animate);
 
                 controls.update();
