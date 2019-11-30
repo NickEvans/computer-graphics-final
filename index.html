@@ -133,12 +133,12 @@
                     clipPlanes[i][0] = new THREE.Plane(
                         //Lower plane
                         new THREE.Vector3(0, 1, 0),
-                        -i
+                        -i + 1
                     );
                     clipPlanes[i][1] = new THREE.Plane(
                         //Upper plane
                         new THREE.Vector3(0, -1, 0),
-                        i + 1
+                        i + 0
                     );
                     var c = new THREE.Mesh(
                         mod.geometry,
@@ -227,7 +227,7 @@
                     mouse.set(0, -(event.clientY/HEIGHT)*2 + 1);
                     ray.setFromCamera(mouse, camera);
                     var hits = ray.intersectObject(plane);
-                    offset.copy(hits[0].point).sub(selected.position);
+                    offset.copy(hits[0].point).sub(selected.parent.position);
                 }
             }
 
@@ -250,8 +250,8 @@
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
                     if(hits.length > 0) {
-                        selected.parent.position.copy(hits[0].point);
-                        //selected.parent.position.copy(hits[0].point.sub(offset));
+                        //selected.parent.position.copy(hits[0].point);
+                        selected.parent.position.copy(hits[0].point.sub(offset));
                         //^ Offset no longer needed?
                     }
 
@@ -313,7 +313,7 @@
                 var done = true;
                 //Interpolate each object to its placing
                 objOrder.forEach(function(obj, i) {
-                    if(obj == selected) {
+                    if(obj.children.some(function(child){ return child == selected })) {
                         done = false;
                     } else if(obj.position.y == i) {
                         done = done && true;
@@ -328,6 +328,7 @@
                 renderer.render(scene, camera);
             }
 
+            //shuffle();
             animate();
 
         </script>
