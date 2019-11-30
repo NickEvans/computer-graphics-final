@@ -79,7 +79,7 @@
             } );
             var loader = new THREE.OBJLoader();
             loader.load(
-                "models/einstein.obj",
+                "models/knight.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
                 function(obj) {
                     obj.traverse(function(child) {
                         if(child instanceof THREE.Mesh) {
@@ -186,7 +186,6 @@
 
             function mouseDown(event) {
                 event.preventDefault();
-
                 mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
                 ray.setFromCamera(mouse, camera);
                 var hits = ray.intersectObjects(sceneObjects);
