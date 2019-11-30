@@ -116,6 +116,7 @@
             */
             var sceneObjects = [];
             var objOrder = []; //Record of stacked order
+            var planeSliceGroups = new Array(4);
 
             var clipPlanesPrime = [];
             clipPlanes.push(new THREE.Plane(
@@ -126,6 +127,8 @@
             function addMeshes(mod) {
                 
                 for(let i=0; i<4; i++) {
+                    var group = new THREE.Group();
+                    scene.add(group);
                     clipPlanes[i] = new Array(2);
                     clipPlanes[i][0] = new THREE.Plane(
                         //Lower plane
@@ -137,7 +140,7 @@
                         new THREE.Vector3(0, -1, 0),
                         i + 1
                     );
-                    let c = new THREE.Mesh(
+                    var c = new THREE.Mesh(
                         mod.geometry,
                         new THREE.MeshPhongMaterial( { 
                             color: colors[i],
@@ -146,11 +149,14 @@
                         } )
                     );
 
+                    c.position.set(0,-i,0);
+                    group.add(c);
+
                     //Fix banding as meshes overlap
                     c.material.polygonOffset = true;
                     c.material.polygonOffsetFactor = -0.1*i;
 
-                    c.position.set(0, 0, 0);
+                    //c.position.set(0, 0, 0);
                     let bbox = new THREE.Box3().setFromObject(c);
                     let size = bbox.getSize();
                     console.log(4/size.y);
@@ -158,9 +164,10 @@
                     //"c.scale.set(0.2, 0.2, 0.2);
                     //c.rotation.x = Math.PI/180 * -90;
 
-                    scene.add(c);
+                    //scene.add(c);
+                    //scene.add(group);
                     sceneObjects.push(c);
-                    objOrder.push(c);
+                    objOrder.push(group);
                 }
 
                 for(var i=0; i<4; i++) {
@@ -198,36 +205,16 @@
 
             function mouseDown(event) {
                 event.preventDefault();
+
                 mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
                 ray.setFromCamera(mouse, camera);
                 var hits = ray.intersectObjects(sceneObjects);
 
                 for(let i=0; i<hits.length; i++) {
-                    /* TODO 
-                    Check if the point is between clipping planes of the object's material, and if not, discard collision and check the next one
-
-                    This will be done in a while loop instead
-                    */
-                    /*
-                    obj = hits[i];
-                    if(obj.clippingPlanes.length > 0) {
-                        console.log("here we go!");
-                        hits = hits.filter(function(elem) {
-                            return obj.clippingPlanes.every(function(elem2) {
-                                return obj.distanceToPoint(elem.point) > 0;
-                            });
-                        });
-                    }*/
-
-                    obj = hits[i].object.material;
-                    if(obj.clippingPlanes.length > 0) {
-                        if(obj.clippingPlanes.every(function(elem) {
-                            return elem.distanceToPoint(hits[i].point) > 0;
-                        })) {
-                            console.log("Hit good");
-                        } else {
-                            console.log("Hit bad");
-                            continue;
+                    let cplanes = hits[i].object.material.clippingPlanes;
+                    if(cplanes.length > 0) {
+                        if(cplanes.some(function(elem) { return elem.distanceToPoint(hits[i].point) < 0; })) {
+                            continue; //Ignore hit outside clipping planes
                         }
                     }
 
@@ -246,7 +233,7 @@
 
             function mouseUp(event) {
                 if(selected != null) {
-                    updateOrder(selected);
+                    updateOrder(selected.parent);
                     selected.material.transparent = false;
                     selected = null;
                     controls.enabled = true;
@@ -263,25 +250,39 @@
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
                     if(hits.length > 0) {
-                        selected.position.copy(hits[0].point.sub(offset));
+                        selected.parent.position.copy(hits[0].point.sub(offset));
                     }
 
                     //Lock to y-axis
                     selected.position.x = 0;
                     selected.position.z = 0;
 
-                    updateOrder(selected);
+                    updateOrder(selected.parent);
                 }
             }
 
             function updateOrder(obj) {
                 //Update position
-                let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
+                var pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
+                //console.log("updateOrder() position: " + pos);
+                //console.log("group position y read as : " + obj.position.y);
 
                 //Swap recorded order
-                let temp = objOrder[pos];
-                objOrder[objOrder.indexOf(obj)] = temp;
+                var cur = objOrder.indexOf(obj);
+                var temp = objOrder[pos];
+                objOrder[cur] = temp;
                 objOrder[pos] = obj;
+
+                //Swap clipping planes?
+                var temp = clipPlanes[pos];
+                clipPlanes[pos] = clipPlanes[cur];
+                clipPlanes[cur] = temp;
+                clipPlanes[cur].forEach(function(plane) {
+                    plane.translate(new THREE.Vector3(0, cur - pos, 0));
+                });
+                clipPlanes[pos].forEach(function(plane) {
+                    plane.translate(new THREE.Vector3(0, pos - cur, 0));
+                });
             }
 
             function handleResize() {
@@ -316,7 +317,7 @@
                         done = done && true;
                     } else {
                         done = false;
-                        //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
                     }
                 });
                 animFinished = done;
