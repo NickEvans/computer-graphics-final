@@ -233,7 +233,7 @@
 
             function mouseUp(event) {
                 if(selected != null) {
-                    updateOrder(selected.parent);
+                    updateOrder(selected);
                     selected.material.transparent = false;
                     selected = null;
                     controls.enabled = true;
@@ -250,28 +250,30 @@
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
                     if(hits.length > 0) {
-                        selected.parent.position.copy(hits[0].point.sub(offset));
+                        selected.parent.position.copy(hits[0].point);
+                        //selected.parent.position.copy(hits[0].point.sub(offset));
+                        //^ Offset no longer needed?
                     }
 
                     //Lock to y-axis
                     selected.position.x = 0;
                     selected.position.z = 0;
 
-                    updateOrder(selected.parent);
+                    updateOrder(selected);
                 }
             }
 
             function updateOrder(obj) {
                 //Update position
-                var pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
-                //console.log("updateOrder() position: " + pos);
-                //console.log("group position y read as : " + obj.position.y);
+                var pos = Math.min(Math.max(0, Math.round(obj.parent.position.y)), 3);
+                console.log("updateOrder() position: " + pos);
+                console.log("group position y read as : " + obj.parent.position.y);
 
                 //Swap recorded order
-                var cur = objOrder.indexOf(obj);
+                var cur = objOrder.indexOf(obj.parent);
                 var temp = objOrder[pos];
                 objOrder[cur] = temp;
-                objOrder[pos] = obj;
+                objOrder[pos] = obj.parent;
 
                 //Swap clipping planes?
                 var temp = clipPlanes[pos];
@@ -317,7 +319,8 @@
                         done = done && true;
                     } else {
                         done = false;
-                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        obj.position.copy(new THREE.Vector3(0, i, ));
                     }
                 });
                 animFinished = done;
