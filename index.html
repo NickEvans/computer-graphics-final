@@ -140,7 +140,7 @@
                     let c = new THREE.Mesh(
                         mod.geometry,
                         new THREE.MeshPhongMaterial( { 
-                            color: colors[2],
+                            color: colors[i],
                             shininess: 0,
                             clippingPlanes: clipPlanes[i]
                         } )
@@ -202,13 +202,36 @@
                 ray.setFromCamera(mouse, camera);
                 var hits = ray.intersectObjects(sceneObjects);
 
-                if(hits.length > 0) {
+                for(let i=0; i<hits.length; i++) {
                     /* TODO 
                     Check if the point is between clipping planes of the object's material, and if not, discard collision and check the next one
 
                     This will be done in a while loop instead
                     */
-                    selected = hits[0].object;
+                    /*
+                    obj = hits[i];
+                    if(obj.clippingPlanes.length > 0) {
+                        console.log("here we go!");
+                        hits = hits.filter(function(elem) {
+                            return obj.clippingPlanes.every(function(elem2) {
+                                return obj.distanceToPoint(elem.point) > 0;
+                            });
+                        });
+                    }*/
+
+                    obj = hits[i].object.material;
+                    if(obj.clippingPlanes.length > 0) {
+                        if(obj.clippingPlanes.every(function(elem) {
+                            return elem.distanceToPoint(hits[i].point) > 0;
+                        })) {
+                            console.log("Hit good");
+                        } else {
+                            console.log("Hit bad");
+                            continue;
+                        }
+                    }
+
+                    selected = hits[i].object;
                     selected.material.transparent = true;
                     selected.material.opacity = 0.6;
                     controls.enabled = false;
