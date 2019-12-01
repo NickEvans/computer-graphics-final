@@ -29,6 +29,7 @@
             var model = new THREE.Mesh();
 
             var animFinished = false;
+            var solved = false;
 
             var scene = new THREE.Scene();
             scene.background = new THREE.Color(0xFAFAE4);
@@ -168,6 +169,8 @@
                     //scene.add(group);
                     sceneObjects.push(c);
                     objOrder.push(group);
+
+                    group.position.y = i;
                 }
 
                 for(var i=0; i<4; i++) {
@@ -270,8 +273,8 @@
             function updateOrder(obj) {
                 //Update position
                 var pos = Math.min(Math.max(0, Math.round(obj.parent.position.y)), 3);
-                console.log("updateOrder() position: " + pos);
-                console.log("group position y read as : " + obj.parent.position.y);
+                //console.log("updateOrder() position: " + pos);
+                //console.log("group position y read as : " + obj.parent.position.y);
 
                 //Swap recorded order
                 var cur = objOrder.indexOf(obj.parent);
@@ -319,26 +322,42 @@
                 var done = true;
                 //Interpolate each object to its placing
                 objOrder.forEach(function(obj, i) {
+                    var planeLo = clipPlanes[i][0];
+                    var planeHi = clipPlanes[i][1];
+
                     if(obj.children.some(function(child){ return child == selected })) {
                         done = false;
-                    } else if(obj.position.y == i) {
+                    } else if(Number.parseFloat(obj.position.y).toFixed(2) == Number.parseFloat(i).toFixed(2)) {
                         done = done && true;
+                        //Snap to prevent gaps, or a lengthy animation
+                        obj.position.copy(new THREE.Vector3(0, i, 0));
+                        planeLo.set(planeLo.normal, -i + 1);
+                        planeHi.set(planeHi.normal, i);
                     } else {
                         done = false;
                         obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
-                        //obj.position.copy(new THREE.Vector3(0, i, 0));
-                        var planeLo = clipPlanes[i][0];
-                        var planeHi = clipPlanes[i][1];
                         planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, -i + 1, 0.1536));
                         planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i, 0.1536));
                     }
                 });
                 animFinished = done;
 
+                if(animFinished) {
+                    if(objOrder.every(function(group) {
+                        group.updateMatrixWorld();
+                        var vector = new THREE.Vector3();
+                        vector.setFromMatrixPosition(group.children[0].matrixWorld);
+                        return (vector.equals(new THREE.Vector3(0, 0, 0)));
+                    })) {
+                        console.log("Solved!");
+                    } else {
+                        solved = false;
+                    }
+                }
+
                 renderer.render(scene, camera);
             }
 
-            //shuffle();
             animate();
 
         </script>
