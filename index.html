@@ -195,7 +195,7 @@
             //Lighting
             var light = new THREE.PointLight();
             light.position.set(5, 5, 5);
-            light.intensity = 0.6;
+            light.intensity = 0.4;
             scene.add(light);
 
             var lighting = new THREEx.ThreePointsLighting();
@@ -311,6 +311,8 @@
                 renderer.render(scene, camera);
             }
 
+            var t = 0.0;
+
             function animate() {
                 /* TODO
                 Change the animation to move groups of objects with their clipping planes.
@@ -327,7 +329,7 @@
 
                     if(obj.children.some(function(child){ return child == selected })) {
                         done = false;
-                    } else if(Number.parseFloat(obj.position.y).toFixed(2) == Number.parseFloat(i).toFixed(2)) {
+                    } else if(Math.abs(Number.parseFloat(obj.position.y).toFixed(1)) == Number.parseFloat(i).toFixed(1)) {
                         done = done && true;
                         //Snap to prevent gaps, or a lengthy animation
                         obj.position.copy(new THREE.Vector3(0, i, 0));
@@ -349,13 +351,33 @@
                         vector.setFromMatrixPosition(group.children[0].matrixWorld);
                         return (vector.equals(new THREE.Vector3(0, 0, 0)));
                     })) {
-                        console.log("Solved!");
+                        solved = true;
                     } else {
                         solved = false;
+                        t = 0.0;
+                        objOrder.forEach(function(group) {
+                            group.rotation.y = 0;
+                        })
                     }
                 }
 
+                if(solved) {
+                        objOrder.forEach(function(group) {
+                            group.rotation.y = smoothLerp(0, 100, t) * 2 * Math.PI;
+                        })
+                        t += 1;
+                        //console.log(t);
+                }
+
                 renderer.render(scene, camera);
+            }
+
+            function smoothLerp(min, max, x) {
+                var p = Math.max(0.0, Math.min(1.0, (x - min) / (max - min)));
+                if(p == 1) {
+                    spinning = false;
+                }
+                return p * p * (3.0 - 2.0 * p);
             }
 
             animate();
