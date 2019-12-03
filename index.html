@@ -118,7 +118,7 @@
                 //Backsides parameters
                 let materialBack = material.clone();
                 materialBack.side = THREE.BackSide;
-                materialBack.clippingPlanes = [ ] //What clips this geometry?
+                materialBack.clippingPlanes = [ plane ];
                 materialBack.stencilFail = THREE.IncrementWrapStencilOp;
                 materialBack.stencilZFail = THREE.IncrementWrapStencilOp;
                 materialback.stencilZPass = THREE.IncrementWrapStencilOp;
@@ -126,7 +126,7 @@
                 //Frontside parameters
                 let materialFront = material.clone();
                 materialFront.side = THREE.FrontSide;
-                materialFront.clippingPlanes = [] //What clips this geometry?
+                materialFront.clippingPlanes = [ plane ];
                 materialFront.stencilFail = THREE.DecrementWrapStencilOp;
                 materialFront.stencilZFail = THREE.DecrementWrapStencilOp;
                 materialFront.stencilZPass = THREE.DecrementWrapStencilOp;
@@ -145,19 +145,21 @@
             function addMeshes(mod) {
                 
                 for(let i=0; i<4; i++) {
-                    var group = new THREE.Group();
+                    var group = new THREE.Group(); //Group is a "slice" -- a copy of the object mesh with a top and bottom clipping plane
                     scene.add(group);
+                    
+                    //A set of clipping planes creates a slice of an object
                     clipPlanes[i] = new Array(2);
                     clipPlanes[i][0] = new THREE.Plane(
-                        //Lower plane
-                        new THREE.Vector3(0, 1, 0),
+                        new THREE.Vector3(0, 1, 0), //Lower plane
                         -i + 1
                     );
                     clipPlanes[i][1] = new THREE.Plane(
-                        //Upper plane
-                        new THREE.Vector3(0, -1, 0),
+                        new THREE.Vector3(0, -1, 0), //Upper plane
                         i + 0
                     );
+
+                    //The object mesh sliced by the plane set
                     var c = new THREE.Mesh(
                         mod.geometry,
                         new THREE.MeshLambertMaterial( { 
@@ -166,30 +168,23 @@
                             clippingPlanes: clipPlanes[i]
                         } )
                     );
-
-                    c.position.set(0,-i,0);
+                    c.position.set(0,-i,0); //An offset so each slice is different
                     group.add(c);
 
-                    //Fix banding as meshes overlap
+                    //Prevents banding where meshes overlap
                     c.material.polygonOffset = true;
                     c.material.polygonOffsetFactor = -0.1*i;
-
-                    //c.position.set(0, 0, 0);
+                    
+                    //Scale the slice to size
                     let bbox = new THREE.Box3().setFromObject(c);
                     let size = bbox.getSize();
-                    console.log(4/size.y);
                     c.scale.set(4 / size.y, 4 / size.y, 4 / size.y);
+
                     sceneObjects.push(c);
                     objOrder.push(group);
-
+                    
+                    //Move the slice into place (not required)
                     group.position.y = i;
-                }
-
-                for(var i=0; i<4; i++) {
-                    console.log("obj " + i + " positioned at " +
-                    objOrder[i].position.x + ", " +
-                    objOrder[i].position.y + ", " + 
-                    objOrder[i].position.z + ".");
                 }
             }
 
