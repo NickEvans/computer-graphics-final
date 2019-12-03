@@ -25,13 +25,16 @@
             var offset = new THREE.Vector3();
             var selected = null;
 
-            var clipPlaneList = new Array(4);
+            var clipPlanes = new Array(4);
             var model = new THREE.Mesh();
 
             var animFinished = false;
+            var solved = false;
 
             var scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xFAFAE4);
+            //scene.background = new THREE.Color(0xFAFAE4);
+            scene.background = new THREE.Color(0x86A3C3);
+            var objColor = new THREE.Color(0xB6CEC7);
 
             //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             var camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
@@ -66,15 +69,13 @@
             colors.push(new THREE.Color(0xFFD3B6));
             colors.push(new THREE.Color(0xFFAAA5));
 
-            
-
             var einsteinMaterial = new THREE.MeshPhongMaterial( {
                 color: colors[1],
                 //clippingPlanes: clipPlanes
             } );
             var loader = new THREE.OBJLoader();
             loader.load(
-                "models/knight.obj",
+                "models/knight.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
                 function(obj) {
                     obj.traverse(function(child) {
                         if(child instanceof THREE.Mesh) {
@@ -83,12 +84,6 @@
                             addMeshes(mod);
                         }
                     });
-
-                    //obj.scale.set(0.2, 0.2, 0.2);
-                    //obj.rotation.x = Math.PI/180 * -90;
-
-                    
-                    //scene.add(obj);
                 },
                 function(xhr) {
                     if(xhr.lengthComputable) {
@@ -96,59 +91,59 @@
                         console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
                     }
                 }
-            );   
-            /*
+            );
+
             var sceneObjects = [];
             var objOrder = []; //Record of stacked order
-            for(let i=0; i<4; i++) {
-                let c = new THREE.Mesh(
-                    new THREE.BoxGeometry(1, 1, 1),
-                    new THREE.MeshPhongMaterial( { color: colors[i] } )
-                );
+            var planeSliceGroups = new Array(4);
 
-                //Fix banding as cube meshes overlap
-                c.material.polygonOffset = true;
-                c.material.polygonOffsetFactor = -0.1*i;
+            var clipPlanesPrime = [];
+            clipPlanes.push(new THREE.Plane(
+                new THREE.Vector3(0, -1, 0),
+                2
+            ));
 
-                c.position.set(0, i, 0);
-                scene.add(c);
-                sceneObjects.push(c);
-                objOrder.push(c);
-            }
-            */
-            var sceneObjects = [];
-            var objOrder = []; //Record of stacked order
             function addMeshes(mod) {
                 
                 for(let i=0; i<4; i++) {
-                    clipPlaneList[i] = new Array(2);
-                    clipPlaneList[i][0] = new THREE.Plane( new THREE.Vector3(0, 1, 0), 2.2-(-i*0.6) );
-                    clipPlaneList[i][1] = new THREE.Plane( new THREE.Vector3(0, -1, 0), 2.2-(i*0.6+0.6));
-
-                    let c = new THREE.Mesh(
+                    var group = new THREE.Group();
+                    scene.add(group);
+                    clipPlanes[i] = new Array(2);
+                    clipPlanes[i][0] = new THREE.Plane(
+                        //Lower plane
+                        new THREE.Vector3(0, 1, 0),
+                        -i + 1
+                    );
+                    clipPlanes[i][1] = new THREE.Plane(
+                        //Upper plane
+                        new THREE.Vector3(0, -1, 0),
+                        i + 0
+                    );
+                    var c = new THREE.Mesh(
                         mod.geometry,
-                        new THREE.MeshPhongMaterial( { 
-                            color: colors[i],
-                            shininess: 0,
-                            //flatShading: true,
-                            //specular: 0x0,
-                            clippingPlanes: clipPlaneList[i]
+                        new THREE.MeshLambertMaterial( { 
+                            color: objColor,
+                            //shininess: 0,
+                            clippingPlanes: clipPlanes[i]
                         } )
                     );
+
+                    c.position.set(0,-i,0);
+                    group.add(c);
 
                     //Fix banding as meshes overlap
                     c.material.polygonOffset = true;
                     c.material.polygonOffsetFactor = -0.1*i;
 
-                    
-
-                    c.position.set(0, 0, 0);
-                    //c.scale.set(0.2, 0.2, 0.2);
-                    //c.rotation.x = Math.PI/180 * -90;
-
-                    scene.add(c);
+                    //c.position.set(0, 0, 0);
+                    let bbox = new THREE.Box3().setFromObject(c);
+                    let size = bbox.getSize();
+                    console.log(4/size.y);
+                    c.scale.set(4 / size.y, 4 / size.y, 4 / size.y);
                     sceneObjects.push(c);
-                    objOrder.push(c);
+                    objOrder.push(group);
+
+                    group.position.y = i;
                 }
 
                 for(var i=0; i<4; i++) {
@@ -158,7 +153,6 @@
                     objOrder[i].position.z + ".");
                 }
             }
-
 
             //Aid object movement
             var plane = new THREE.Mesh(
@@ -171,12 +165,12 @@
             );
             scene.add(plane);
 
-
-
             //Lighting
             var light = new THREE.PointLight(0xffffff, 0.5);
             light.position.set(5, 5, 5);
+            light.intensity = 0.5;
             scene.add(light);
+
             var lighting = new THREEx.ThreePointsLighting();
             scene.add(lighting);
 
@@ -192,8 +186,15 @@
                 ray.setFromCamera(mouse, camera);
                 var hits = ray.intersectObjects(sceneObjects);
 
-                if(hits.length > 0) {
-                    selected = hits[0].object;
+                for(let i=0; i<hits.length; i++) {
+                    let cplanes = hits[i].object.material.clippingPlanes;
+                    if(cplanes.length > 0) {
+                        if(cplanes.some(function(elem) { return elem.distanceToPoint(hits[i].point) < 0; })) {
+                            continue; //Ignore hit outside clipping planes
+                        }
+                    }
+
+                    selected = hits[i].object;
                     selected.material.transparent = true;
                     selected.material.opacity = 0.6;
                     controls.enabled = false;
@@ -202,7 +203,7 @@
                     mouse.set(0, -(event.clientY/HEIGHT)*2 + 1);
                     ray.setFromCamera(mouse, camera);
                     var hits = ray.intersectObject(plane);
-                    offset.copy(hits[0].point).sub(selected.position);
+                    offset.copy(hits[0].point).sub(selected.parent.position);
                 }
             }
 
@@ -225,7 +226,13 @@
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
                     if(hits.length > 0) {
-                        selected.position.copy(hits[0].point.sub(offset));
+                        //selected.parent.position.copy(hits[0].point);
+                        var planeOffset = selected.parent.position.y;
+                        selected.parent.position.copy(hits[0].point.sub(offset));
+                        var planeIndex = objOrder.indexOf(selected.parent);
+                        clipPlanes[planeIndex].forEach(function(plane) {
+                            plane.translate(new THREE.Vector3(0, selected.parent.position.y - planeOffset, 0));
+                        })
                     }
 
                     //Lock to y-axis
@@ -238,12 +245,28 @@
 
             function updateOrder(obj) {
                 //Update position
-                let pos = Math.min(Math.max(0, Math.round(obj.position.y)), 3);
+                var pos = Math.min(Math.max(0, Math.round(obj.parent.position.y)), 3);
+                //console.log("updateOrder() position: " + pos);
+                //console.log("group position y read as : " + obj.parent.position.y);
 
                 //Swap recorded order
-                let temp = objOrder[pos];
-                objOrder[objOrder.indexOf(obj)] = temp;
-                objOrder[pos] = obj;
+                var cur = objOrder.indexOf(obj.parent);
+                var temp = objOrder[pos];
+                objOrder[cur] = temp;
+                objOrder[pos] = obj.parent;
+
+                //Swap clipping planes?
+                var temp = clipPlanes[pos];
+                clipPlanes[pos] = clipPlanes[cur];
+                clipPlanes[cur] = temp;
+                /*
+                clipPlanes[cur].forEach(function(plane) {
+                    plane.translate(new THREE.Vector3(0, cur - pos, 0));
+                });
+                clipPlanes[pos].forEach(function(plane) {
+                    plane.translate(new THREE.Vector3(0, pos - cur, 0));
+                });
+                */
             }
 
             function handleResize() {
@@ -261,6 +284,8 @@
                 renderer.render(scene, camera);
             }
 
+            var t = 0.0;
+
             function animate() {
                 requestAnimationFrame(animate);
 
@@ -269,18 +294,59 @@
                 var done = true;
                 //Interpolate each object to its placing
                 objOrder.forEach(function(obj, i) {
-                    if(obj == selected) {
+                    var planeLo = clipPlanes[i][0];
+                    var planeHi = clipPlanes[i][1];
+
+                    if(obj.children.some(function(child){ return child == selected })) {
                         done = false;
-                    } else if(obj.position.y == i) {
+                    } else if(Math.abs(Number.parseFloat(obj.position.y).toFixed(2)) == Number.parseFloat(i).toFixed(2)) {
                         done = done && true;
+                        //Snap to prevent gaps, or a lengthy animation
+                        obj.position.copy(new THREE.Vector3(0, i, 0));
+                        planeLo.set(planeLo.normal, -i + 1);
+                        planeHi.set(planeHi.normal, i);
                     } else {
                         done = false;
-                        //obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, -i + 1, 0.1536));
+                        planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i, 0.1536));
                     }
                 });
                 animFinished = done;
 
+                if(animFinished) {
+                    if(objOrder.every(function(group) {
+                        group.updateMatrixWorld();
+                        var vector = new THREE.Vector3();
+                        vector.setFromMatrixPosition(group.children[0].matrixWorld);
+                        return (vector.equals(new THREE.Vector3(0, 0, 0)));
+                    })) {
+                        solved = true;
+                    } else {
+                        solved = false;
+                        t = 0.0;
+                        objOrder.forEach(function(group) {
+                            group.rotation.y = 0;
+                        })
+                    }
+                }
+
+                if(solved) {
+                        objOrder.forEach(function(group) {
+                            group.rotation.y = smoothLerp(0, 80, t) * 2 * Math.PI;
+                        })
+                        t += 1;
+                }
+
                 renderer.render(scene, camera);
+            }
+
+            function smoothLerp(min, max, x) {
+                var p = Math.max(0.0, Math.min(1.0, (x - min) / (max - min)));
+                if(p == 1) {
+                    spinning = false;
+                }
+                return p * p * (3.0 - 2.0 * p);
             }
 
             animate();
