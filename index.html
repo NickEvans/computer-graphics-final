@@ -104,6 +104,44 @@
                 2
             ));
 
+            function createStencilGroup(object, plane, rendOrder) {
+                let group = new THREE.Group();
+                let material = new THREE.MeshBasicMaterial();
+
+                //Basic stencil parameters
+                material.depthWrite = false;
+                material.depthTests = false;
+                material.colorWrite = false;
+                material.stencilWrite = false;
+                material.stencilFunc = THREE.AlwaysStencilFunc;
+
+                //Backsides parameters
+                let materialBack = material.clone();
+                materialBack.side = THREE.BackSide;
+                materialBack.clippingPlanes = [ ] //What clips this geometry?
+                materialBack.stencilFail = THREE.IncrementWrapStencilOp;
+                materialBack.stencilZFail = THREE.IncrementWrapStencilOp;
+                materialback.stencilZPass = THREE.IncrementWrapStencilOp;
+
+                //Frontside parameters
+                let materialFront = material.clone();
+                materialFront.side = THREE.FrontSide;
+                materialFront.clippingPlanes = [] //What clips this geometry?
+                materialFront.stencilFail = THREE.DecrementWrapStencilOp;
+                materialFront.stencilZFail = THREE.DecrementWrapStencilOp;
+                materialFront.stencilZPass = THREE.DecrementWrapStencilOp;
+
+                //Create front + back mesh group
+                let meshBack = new THREE.Mesh(object, materialBack);
+                let meshFront = new THREE.Mesh(object, materialFront);
+                meshBack.renderOrder = rendOrder;
+                meshFront.renderOrder = ren
+                group.add(meshBack);
+                group.add(meshFront);
+
+                return group;
+            }
+
             function addMeshes(mod) {
                 
                 for(let i=0; i<4; i++) {
@@ -174,6 +212,8 @@
 
             var lighting = new THREEx.ThreePointsLighting();
             scene.add(lighting);
+
+            //EVENTS
 
             document.addEventListener("mousedown", mouseDown, false);
             document.addEventListener("mouseup", mouseUp, false);
@@ -286,6 +326,8 @@
             }
 
             var t = 0.0;
+
+            //ANIMATION UPDATE
 
             function animate() {
                 requestAnimationFrame(animate);
