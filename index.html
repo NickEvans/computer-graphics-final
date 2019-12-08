@@ -142,6 +142,8 @@
                 return group;
             }
 
+            var meshPlanes = [];
+
             function addMeshes(mod) {
                 
                 for(let i=0; i<4; i++) {
@@ -173,6 +175,7 @@
 
                     /// STENCIL PLANE RENDERING
                     var meshPlaneGroup = new THREE.Group;
+                    //var meshPlanes = [];
                     var meshPlaneGeometry = new THREE.PlaneBufferGeometry(4, 4);
 
                     for(var j=0; j<2; j++) {
@@ -198,7 +201,8 @@
                         //Render order?
                         group.add(meshStencilGroup);
                         meshPlaneGroup.add(meshPlane);
-
+                        meshPlanes.push(meshPlane);
+                        console.log("A thing was pushed... " + meshPlanes.length);
                         scene.add(meshPlaneGroup);
                         
                     }
@@ -381,9 +385,31 @@
                         planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, -i + 1, 0.1536));
                         planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i, 0.1536));
                     }
-                });
 
-                //Update clip plane objects
+                    //Adjust plane objects to clipping planes
+                    var meshLo = meshPlanes[i*2];
+                    var meshHi = meshPlanes[i*2+1];
+                    //console.log(planeLo.normal.y);
+                    //console.log(meshLo.position.y);
+
+                    planeLo.coplanarPoint(meshLo.position);
+                    
+                    meshLo.lookAt(
+						meshLo.position.x - planeLo.normal.x,
+						meshLo.position.y - planeLo.normal.y,
+						meshLo.position.z - planeLo.normal.z,
+                    );
+                    
+                    planeHi.coplanarPoint(meshHi.position);
+                    meshHi.lookAt(
+						meshHi.position.x - planeHi.normal.x,
+						meshHi.position.y - planeHi.normal.y,
+						meshHi.position.z - planeHi.normal.z,
+                    );
+                    
+
+
+                });
                 
                 animFinished = done;
 
