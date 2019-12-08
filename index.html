@@ -121,7 +121,7 @@
                 materialBack.clippingPlanes = [ plane ];
                 materialBack.stencilFail = THREE.IncrementWrapStencilOp;
                 materialBack.stencilZFail = THREE.IncrementWrapStencilOp;
-                materialback.stencilZPass = THREE.IncrementWrapStencilOp;
+                materialBack.stencilZPass = THREE.IncrementWrapStencilOp;
 
                 //Frontside parameters
                 let materialFront = material.clone();
@@ -135,7 +135,7 @@
                 let meshBack = new THREE.Mesh(object, materialBack);
                 let meshFront = new THREE.Mesh(object, materialFront);
                 meshBack.renderOrder = rendOrder;
-                meshFront.renderOrder = ren
+                meshFront.renderOrder = rendOrder;
                 group.add(meshBack);
                 group.add(meshFront);
 
@@ -170,6 +170,38 @@
                     );
                     c.position.set(0,-i,0); //An offset so each slice is different
                     group.add(c);
+
+                    /// STENCIL PLANE RENDERING
+                    var meshPlaneGroup = new THREE.Group;
+                    var meshPlaneGeometry = new THREE.PlaneBufferGeometry(4, 4);
+
+                    for(var j=0; j<2; j++) {
+                        var planeMeshGroup = new THREE.Group();
+                        var plane = clipPlanes[i][j];
+                        var meshStencilGroup = createStencilGroup(mod.geometry, plane, i + j + 1);
+
+                        var meshPlaneMaterial = new THREE.MeshStandardMaterial({
+                            color: 0xE91E63,
+                            stencilWrite: true,
+							stencilRef: 0,
+							stencilFunc: THREE.NotEqualStencilFunc,
+							stencilFail: THREE.ReplaceStencilOp,
+							stencilZFail: THREE.ReplaceStencilOp,
+							stencilZPass: THREE.ReplaceStencilOp,
+                        });
+
+                        var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
+                        meshPlane.onAfterRender = function(renderer) {
+                            renderer.clearStencil();
+                        }
+
+                        //Render order?
+                        group.add(meshStencilGroup);
+                        meshPlaneGroup.add(meshPlane);
+
+                        scene.add(meshPlaneGroup);
+                        
+                    }
 
                     //Prevents banding where meshes overlap
                     c.material.polygonOffset = true;
@@ -350,6 +382,9 @@
                         planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i, 0.1536));
                     }
                 });
+
+                //Update clip plane objects
+                
                 animFinished = done;
 
                 if(animFinished) {
