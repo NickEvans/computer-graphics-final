@@ -334,8 +334,6 @@
             function updateOrder(obj) {
                 //Update position
                 var pos = Math.min(Math.max(0, Math.round(obj.parent.position.y)), 3);
-                //console.log("updateOrder() position: " + pos);
-                //console.log("group position y read as : " + obj.parent.position.y);
 
                 //Swap recorded order`
                 var cur = objOrder.indexOf(obj.parent);
