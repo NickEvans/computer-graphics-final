@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>three.js practice</title>
+        <title>CAP 4720 Final Project</title>
         <style>
             body { margin: 0; }
             canvas { width: 100%; height: 100%; }
@@ -10,112 +10,110 @@
     </head>
     <body>
         <script src="js/three.min.js"></script>
-        <script src="https://threejs.org/build/three.min.js"></script>
         <script src="https://threejs.org/examples/js/loaders/OBJLoader.js"></script>
         <script src='js/threex.basiclighting.js'></script>
         <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
         <script src='js/threex.basiclighting.js'></script>
         <script>
-            var WIDTH = window.innerWidth;
-            var HEIGHT = window.innerHeight;
-            var aspect = WIDTH / HEIGHT;
-            var viewSize = 8;
-            var mouse = new THREE.Vector2();
-            var ray = new THREE.Raycaster();
-            var offset = new THREE.Vector3();
-            var selected = null;
+            //Global declarations
+            var WIDTH, HEIGHT, viewSize, mouse, ray, offset, selected;
+            var scene, camera, renderer, controls, loader, light, lighting;
+            var clipPlanes, sceneObjects, objOrder, model, objColor, colors;
 
-            var clipPlanes = new Array(4);
-            var model = new THREE.Mesh();
+            init();
+            animate();
 
-            var animFinished = false;
-            var solved = false;
+            function init() {
+                //View settings
+                WIDTH = window.innerWidth;
+                HEIGHT = window.innerHeight;
+                var aspect = WIDTH / HEIGHT;
+                viewSize = 8;
 
-            var scene = new THREE.Scene();
-            //scene.background = new THREE.Color(0xFAFAE4);
-            scene.background = new THREE.Color(0x86A3C3);
-            var objColor = new THREE.Color(0xB6CEC7);
+                //Interactivity
+                mouse = new THREE.Vector2();
+                ray = new THREE.Raycaster();
+                offset = new THREE.Vector3();
+                selected = null;
 
-            //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            var camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
-            
-            var renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(WIDTH, HEIGHT);
-            renderer.localClippingEnabled = true;
-            document.body.appendChild(renderer.domElement);
+                //Model
+                clipPlanes = new Array(4);
+                model = new THREE.Mesh();
+                objColor = new THREE.Color(0xB6CEC7);
+                objColorSelect = new THREE.Color(0xC5DED7);
 
-            var controls = new THREE.OrbitControls (camera, renderer.domElement);
-            controls.addEventListener("change",
+                //Scene
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x86A3C3);
+
+                //Camera
+                camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
+                camera.position.set(100,100,100);
+                camera.lookAt(scene.position);
+                camera.updateProjectionMatrix();
+                camera.updateMatrixWorld();
+
+                //Renderer
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(WIDTH, HEIGHT);
+                renderer.localClippingEnabled = true;
+                document.body.appendChild(renderer.domElement);
+
+                //Controls
+                controls = new THREE.OrbitControls (camera, renderer.domElement);
+                controls.addEventListener("change",
                 function(){
                     camera.updateProjectionMatrix();
                     camera.updateMatrixWorld();
                     //console.log("Camera position: (" + camera.position.x + ", " + camera.position.y + "," + camera.position.z + ")");
-                }
-            );
-            //controls.maxPolarAngle = Math.PI/3;
-            controls.minPolarAngle = Math.PI/3;
-            controls.minAzimuthAngle = -Math.PI/8;
-            controls.maxAzimuthAngle = Math.PI/2.2;
+                });
+                //controls.maxPolarAngle = Math.PI/3;
+                controls.minPolarAngle = Math.PI/3;
+                controls.minAzimuthAngle = -Math.PI/8;
+                controls.maxAzimuthAngle = Math.PI/2.2;
 
-            camera.position.set(100,100,100);
-            camera.lookAt(scene.position);
-            controls.update();
-            camera.updateProjectionMatrix();
-            camera.updateMatrixWorld();
-            
-            var colors = [];
-            colors.push(new THREE.Color(0xA8E6CF));
-            colors.push(new THREE.Color(0xDCEDC1));
-            colors.push(new THREE.Color(0xFFD3B6));
-            colors.push(new THREE.Color(0xFFAAA5));
-            /*
-            var einsteinMaterial = new THREE.MeshPhongMaterial( {
-                color: colors[1],
-                //clippingPlanes: clipPlanes
-            } );
-            */
-            var loader = new THREE.OBJLoader();
-            loader.load(
-                "models/knight.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
-                function(obj) {
-                    obj.traverse(function(child) {
-                        if(child instanceof THREE.Mesh) {
-                            //child.material = einsteinMaterial;
-                            var mod = child.clone();
-                            addMeshes(mod);
+                //Load models and initialize effects
+                sceneObjects = []; //Interactables
+                objOrder = []; //Record of stacked order
+                var loader = new THREE.OBJLoader();
+                loader.load(
+                    "models/knight.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
+
+                    function(obj) {
+                        obj.traverse(function(child) {
+                            if(child instanceof THREE.Mesh) {
+                                var mod = child.clone();
+
+                                //Create slices!
+                                addMeshes(mod);
+                            }
+                        });
+                    },
+
+                    //Display load progress
+                    function(xhr) {
+                        if(xhr.lengthComputable) {
+                            var percentComplete = xhr.loaded / xhr.total * 100;
+                            console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
                         }
                     });
-                },
-                function(xhr) {
-                    if(xhr.lengthComputable) {
-                        var percentComplete = xhr.loaded / xhr.total * 100;
-                        console.log("Model " + Math.round(percentComplete, 2) + "% loaded");
-                    }
-                }
-            );
 
-            var sceneObjects = [];
-            var objOrder = []; //Record of stacked order
-            var planeSliceGroups = new Array(4);
+            }
 
-            var clipPlanesPrime = [];
-            clipPlanes.push(new THREE.Plane(
-                new THREE.Vector3(0, -1, 0),
-                2
-            ));
-
+            //Create a mesh copy for each object that writes to stencil buffer
             function createStencilGroup(object, planes, rendOrder) {
-                var group = new THREE.Group();
-                var material = new THREE.MeshBasicMaterial();
+                var stenGroup = new THREE.Group();
 
-                //Basic stencil parameters
-                material.depthWrite = false;
-				material.depthTest = false;
-				material.colorWrite = false;
-				material.stencilWrite = true;
-				material.stencilFunc = THREE.AlwaysStencilFunc;
+                //Basic stencil parameters for both sides
+                var material = new THREE.MeshBasicMaterial({
+                    depthWrite: false,
+                    depthTest: false,
+                    colorWrite: false,
+                    stencilWrite: true,
+                    stencilFunc: THREE.AlwaysStencilFunc,
+                });
 
-                //Backsides parameters
+                //Backsides 
                 var materialBack = material.clone();
                 materialBack.side = THREE.BackSide;
                 materialBack.clippingPlanes = planes;
@@ -123,7 +121,7 @@
                 materialBack.stencilZFail = THREE.IncrementWrapStencilOp;
                 materialBack.stencilZPass = THREE.IncrementWrapStencilOp;
 
-                //Frontside parameters
+                //Frontside 
                 var materialFront = material.clone();
                 materialFront.side = THREE.FrontSide;
                 materialFront.clippingPlanes = planes;
@@ -132,19 +130,20 @@
                 materialFront.stencilZPass = THREE.DecrementWrapStencilOp;
 
                 //Create front + back mesh group
+                //Where there is a front or back mesh, stencil is written
                 var meshBack = new THREE.Mesh(object, materialBack);
                 var meshFront = new THREE.Mesh(object, materialFront);
                 meshBack.renderOrder = rendOrder;
                 meshFront.renderOrder = rendOrder;
-                group.add(meshBack);
-                group.add(meshFront);
+                stenGroup.add(meshBack);
+                stenGroup.add(meshFront);
 
-                return group;
+                return stenGroup;
             }
 
+            //Create slices for the loaded model
+            //Each slice is a full copy clipped by two planes
             var meshPlanes = [];
-            var planeRenderCounter = 0;
-
             function addMeshes(mod) {
                 /*
                 var group = new THREE.Group(); //Group is a "slice" -- a copy of the object mesh with a top and bottom clipping plane
@@ -152,25 +151,24 @@
                 scene.add(group);
                 */
 
-                
                 for(let i=0; i<4; i++) {
+                    //Group contains visible slice mesh along with stencil mesh and plane
+                    var group = new THREE.Group(); 
                     
-                    var group = new THREE.Group(); //Group is a "slice" -- a copy of the object mesh with a top and bottom clipping plane
-                
                     scene.add(group);
                     
                     //A set of clipping planes creates a slice of an object
                     clipPlanes[i] = new Array(2);
                     clipPlanes[i][0] = new THREE.Plane(
-                        new THREE.Vector3(0, 1, 0), //Lower plane
+                        //Lower plane
+                        new THREE.Vector3(0, 1, 0),
                         -i + 1
                     );
                     clipPlanes[i][1] = new THREE.Plane(
-                        new THREE.Vector3(0, -1, 0), //Upper plane
+                        //Upper plane
+                        new THREE.Vector3(0, -1, 0),
                         i + 0
                     );
-
-                    
 
                     /// STENCIL PLANE RENDERING
                     var meshPlaneGroup = new THREE.Group;
@@ -183,6 +181,7 @@
                         var meshStencilGroup = createStencilGroup(mod.geometry, plane, i);
                         meshStencilGroup.position.set(0,-i,0); //Same offset as visible geometry
 
+                        //Plane fills in hollow section of clipped geometry
                         var meshPlaneMaterial = new THREE.MeshStandardMaterial({
                             color: objColor,
                             metalness: 0.1,
@@ -198,14 +197,17 @@
                         });
 
                         var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
-                        meshPlane.onAfterRender = function(renderer) {
-                            //renderer.clearStencil();
-                        }
-
                         meshPlaneMaterial.renderOrder =  1.1 + i*0.1;
                         //planeRenderCounter++;
+                        meshPlane.name = "Plane";
+                        meshPlane.onAfterRender = function(renderer) {
+                            renderer.clearStencil();
+                        }
+
+                        
                         
                         group.add(meshStencilGroup);
+                        group.add(meshPlane);
                         meshPlaneGroup.add(meshPlane);
                         meshPlanes.push(meshPlane);
                         console.log("A thing was pushed... " + meshPlanes.length);
@@ -271,7 +273,6 @@
             scene.add(lighting);
 
             //EVENTS
-
             document.addEventListener("mousedown", mouseDown, false);
             document.addEventListener("mouseup", mouseUp, false);
             document.addEventListener("mousemove", onMouseMove, false);
@@ -293,8 +294,20 @@
                     }
 
                     selected = hits[i].object;
-                    selected.material.transparent = true;
-                    selected.material.opacity = 0.6;
+                    //selected.material.transparent = true;
+                    //selected.material.opacity = 0.6;
+                    selected.material.color = objColorSelect;
+                    
+                    //This isn't working:
+                    selected.parent.children.forEach(function(child) {
+                        if(child.material) {
+                            if(child.material.color == objColor) {
+                                child.material.color = objColorSelect;
+                            }
+                        }
+                    })
+
+
                     controls.enabled = false;
 
                     //A new raycast is needed for the correct offset
@@ -308,7 +321,8 @@
             function mouseUp(event) {
                 if(selected != null) {
                     updateOrder(selected);
-                    selected.material.transparent = false;
+                    //selected.material.transparent = false;
+                    selected.material.color = objColor;
                     selected = null;
                     controls.enabled = true;
                 }
@@ -383,10 +397,8 @@
                 renderer.render(scene, camera);
             }
 
+            //Animation loop
             var t = 0.0;
-
-            //ANIMATION UPDATE
-
             function animate() {
                 requestAnimationFrame(animate);
 
