@@ -137,7 +137,7 @@
                 var material = new THREE.MeshBasicMaterial({
                     depthWrite: false,
                     depthTest: true,
-                    colorWrite: true,
+                    colorWrite: false,
                     stencilWrite: true,
                     stencilFunc: THREE.AlwaysStencilFunc,
                 });
@@ -202,6 +202,7 @@
                         //var planeMeshGroup = new THREE.Group();
                         var plane = clipPlanes[i];
                         var meshStencilGroup = createStencilGroup(mod.geometry, plane, i);
+                        //meshStencilGroup.renderOrder = 0;
                         meshStencilGroup.position.set(0,-i,0); //Same offset as visible geometry
 
                         //Plane fills in hollow section of clipped geometry
@@ -212,6 +213,7 @@
                             stencilWrite: true,
                             //colorWrite: true,
                             //depthWrite: true,
+                            //depthTest: false,
 							stencilRef: 0,
 							stencilFunc: THREE.NotEqualStencilFunc,
 							stencilFail: THREE.ReplaceStencilOp,
@@ -222,15 +224,14 @@
                         var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
                         
                         //planeRenderCounter++;
-                        meshPlane.name = "Plane";
+                        //meshPlane.name = "Plane";
                         
-                        meshPlane.onAfterRender = function(renderer, scene, camera, geometry, material, group) {
+                        meshPlane.onAfterRender = function(renderer) {
                             renderer.clearStencil();
                             //console.log("Stencil cleared after rendering mesh on order " + material.renderOrder);
                         };
-                        
-                        
-                        meshPlaneMaterial.renderOrder =  i+1;
+
+                        meshPlane.renderOrder =  i+0.1;
                         
                         
                         group.add(meshStencilGroup);
@@ -250,25 +251,25 @@
                             metalness: 0.1,
                             roughness: 0.75,
                             clippingPlanes: clipPlanes[i],
-                            //side: THREE.DoubleSide,
+                            side: THREE.DoubleSide,
                             //depthWrite: true,
                             //clipShadows: true,
                             //shadowSide: THREE.DoubleSide,
                             //visible: false
                         })
                     );
-                    
-                    c.position.set(0,-i,0); //An offset so each slice is different
+
+                    //An offset so each slice is different
+                    c.position.set(0,-i,0);
                     group.add(c);
 
                     //Prevents banding where meshes overlap
-                    //c.material.polygonOffset = true;
-                    //c.material.polygonOffsetFactor = -0.1*i;
+                    c.material.polygonOffset = true;
+                    c.material.polygonOffsetFactor = -0.1*i;
 
-                    c.material.renderOrder = 0;
+                    c.material.renderOrder = i+0.2;
                     
                     //Scale the slice to size
-
                     /*
                     let bbox = new THREE.Box3().setFromObject(c);
                     let size = bbox.getSize();
