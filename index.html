@@ -146,9 +146,17 @@
             var planeRenderCounter = 0;
 
             function addMeshes(mod) {
+                /*
+                var group = new THREE.Group(); //Group is a "slice" -- a copy of the object mesh with a top and bottom clipping plane
+                
+                scene.add(group);
+                */
+
                 
                 for(let i=0; i<4; i++) {
+                    
                     var group = new THREE.Group(); //Group is a "slice" -- a copy of the object mesh with a top and bottom clipping plane
+                
                     scene.add(group);
                     
                     //A set of clipping planes creates a slice of an object
@@ -167,13 +175,13 @@
                     /// STENCIL PLANE RENDERING
                     var meshPlaneGroup = new THREE.Group;
                     //var meshPlanes = [];
-                    var meshPlaneGeometry = new THREE.PlaneBufferGeometry(1, 1);
+                    var meshPlaneGeometry = new THREE.PlaneBufferGeometry(2, 2);
 
                     ///////for(var j=0; j<2; j++) {
                         //var planeMeshGroup = new THREE.Group();
                         var plane = clipPlanes[i];
                         var meshStencilGroup = createStencilGroup(mod.geometry, plane, i);
-                        meshStencilGroup.position.set(0,-i,0);
+                        meshStencilGroup.position.set(0,-i,0); //Same offset as visible geometry
 
                         var meshPlaneMaterial = new THREE.MeshStandardMaterial({
                             color: objColor,
@@ -181,7 +189,7 @@
 					        roughness: 0.75,
                             stencilWrite: true,
                             //colorWrite: true,
-                            //depthWrite: false,
+                            //depthWrite: true,
 							stencilRef: 0,
 							stencilFunc: THREE.NotEqualStencilFunc,
 							stencilFail: THREE.ReplaceStencilOp,
@@ -191,11 +199,11 @@
 
                         var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
                         meshPlane.onAfterRender = function(renderer) {
-                            renderer.clearStencil();
+                            //renderer.clearStencil();
                         }
 
-                        meshPlaneMaterial.renderOrder = i + 0.1;
-                        planeRenderCounter++;
+                        meshPlaneMaterial.renderOrder =  1.1 + i*0.1;
+                        //planeRenderCounter++;
                         
                         group.add(meshStencilGroup);
                         meshPlaneGroup.add(meshPlane);
@@ -224,7 +232,7 @@
                     //c.material.polygonOffset = true;
                     //c.material.polygonOffsetFactor = -0.1*i;
 
-                    //c.material.renderOrder = i+20;
+                    c.material.renderOrder = 8;
                     
                     //Scale the slice to size
 
