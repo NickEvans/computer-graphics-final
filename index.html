@@ -18,7 +18,7 @@
             //Global declarations
             var WIDTH, HEIGHT, viewSize, mouse, ray, offset, selected;
             var scene, camera, renderer, controls, loader, light, lighting;
-            var clipPlanes, sceneObjects, objOrder, model, objColor, colors;
+            var clipPlanes, sceneObjects, objOrder, model, objColor, colors, plane;
 
             init();
             animate();
@@ -28,13 +28,7 @@
                 WIDTH = window.innerWidth;
                 HEIGHT = window.innerHeight;
                 var aspect = WIDTH / HEIGHT;
-                viewSize = 8;
-
-                //Interactivity
-                mouse = new THREE.Vector2();
-                ray = new THREE.Raycaster();
-                offset = new THREE.Vector3();
-                selected = null;
+                viewSize = 6;
 
                 //Model
                 clipPlanes = new Array(4);
@@ -42,9 +36,32 @@
                 objColor = new THREE.Color(0xB6CEC7);
                 objColorSelect = new THREE.Color(0xC5DED7);
 
+                //Colors
+                colors = [];
+                colors.push(new THREE.Color(0xA8E6CF));
+                colors.push(new THREE.Color(0xDCEDC1));
+                colors.push(new THREE.Color(0xFFD3B6));
+                colors.push(new THREE.Color(0xFFAAA5));
+
                 //Scene
                 scene = new THREE.Scene();
                 scene.background = new THREE.Color(0x86A3C3);
+
+                //Interactivity
+                mouse = new THREE.Vector2();
+                ray = new THREE.Raycaster();
+                offset = new THREE.Vector3();
+                selected = null;
+                //Aid object movement
+                plane = new THREE.Mesh(
+                    new THREE.PlaneBufferGeometry(500, 500, 8, 8),
+                    new THREE.MeshBasicMaterial({
+                        //wireframe: true,
+                        //color: 0xffffff,
+                        visible: false
+                    })
+                );
+                scene.add(plane);
 
                 //Camera
                 camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
@@ -52,6 +69,14 @@
                 camera.lookAt(scene.position);
                 camera.updateProjectionMatrix();
                 camera.updateMatrixWorld();
+
+                //Lighting
+                var light = new THREE.PointLight(0xffffff, 0.5);
+                light.position.set(5, 5, 5);
+                light.intensity = 0.5;
+                scene.add(light);
+                var lighting = new THREEx.ThreePointsLighting();
+                scene.add(lighting);
 
                 //Renderer
                 renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -65,9 +90,8 @@
                 function(){
                     camera.updateProjectionMatrix();
                     camera.updateMatrixWorld();
-                    //console.log("Camera position: (" + camera.position.x + ", " + camera.position.y + "," + camera.position.z + ")");
                 });
-                //controls.maxPolarAngle = Math.PI/3;
+                controls.maxPolarAngle = Math.PI/3;
                 controls.minPolarAngle = Math.PI/3;
                 controls.minAzimuthAngle = -Math.PI/8;
                 controls.maxAzimuthAngle = Math.PI/2.2;
@@ -98,6 +122,11 @@
                         }
                     });
 
+                //Listeners
+                document.addEventListener("mousedown", mouseDown, false);
+                document.addEventListener("mouseup", mouseUp, false);
+                document.addEventListener("mousemove", onMouseMove, false);
+                window.addEventListener("resize", handleResize, false);
             }
 
             //Create a mesh copy for each object that writes to stencil buffer
@@ -107,8 +136,8 @@
                 //Basic stencil parameters for both sides
                 var material = new THREE.MeshBasicMaterial({
                     depthWrite: false,
-                    depthTest: false,
-                    colorWrite: false,
+                    depthTest: true,
+                    colorWrite: true,
                     stencilWrite: true,
                     stencilFunc: THREE.AlwaysStencilFunc,
                 });
@@ -145,12 +174,6 @@
             //Each slice is a full copy clipped by two planes
             var meshPlanes = [];
             function addMeshes(mod) {
-                /*
-                var group = new THREE.Group(); //Group is a "slice" -- a copy of the object mesh with a top and bottom clipping plane
-                
-                scene.add(group);
-                */
-
                 for(let i=0; i<4; i++) {
                     //Group contains visible slice mesh along with stencil mesh and plane
                     var group = new THREE.Group(); 
@@ -183,7 +206,7 @@
 
                         //Plane fills in hollow section of clipped geometry
                         var meshPlaneMaterial = new THREE.MeshStandardMaterial({
-                            color: objColor,
+                            color: colors[i],
                             metalness: 0.1,
 					        roughness: 0.75,
                             stencilWrite: true,
@@ -197,34 +220,42 @@
                         });
 
                         var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
-                        meshPlaneMaterial.renderOrder =  1.1 + i*0.1;
+                        
                         //planeRenderCounter++;
                         meshPlane.name = "Plane";
-                        meshPlane.onAfterRender = function(renderer) {
+                        
+                        meshPlane.onAfterRender = function(renderer, scene, camera, geometry, material, group) {
                             renderer.clearStencil();
-                        }
-
+                            //console.log("Stencil cleared after rendering mesh on order " + material.renderOrder);
+                        };
+                        
+                        
+                        meshPlaneMaterial.renderOrder =  i+1;
                         
                         
                         group.add(meshStencilGroup);
                         group.add(meshPlane);
                         meshPlaneGroup.add(meshPlane);
                         meshPlanes.push(meshPlane);
-                        console.log("A thing was pushed... " + meshPlanes.length);
+                        //console.log("A thing was pushed... " + meshPlanes.length);
                         scene.add(meshPlaneGroup);
                         
                     /////////}
 
-                    //The object mesh sliced by the plane set
+                    //Visible clipped geometry
                     var c = new THREE.Mesh(
                         mod.geometry,
-                        new THREE.MeshLambertMaterial( { 
+                        new THREE.MeshStandardMaterial ({
                             color: objColor,
-                            //shininess: 0,
+                            metalness: 0.1,
+                            roughness: 0.75,
                             clippingPlanes: clipPlanes[i],
-                            clipShadows: true,
-					        shadowSide: THREE.DoubleSide
-                        } )
+                            //side: THREE.DoubleSide,
+                            //depthWrite: true,
+                            //clipShadows: true,
+                            //shadowSide: THREE.DoubleSide,
+                            //visible: false
+                        })
                     );
                     
                     c.position.set(0,-i,0); //An offset so each slice is different
@@ -234,7 +265,7 @@
                     //c.material.polygonOffset = true;
                     //c.material.polygonOffsetFactor = -0.1*i;
 
-                    c.material.renderOrder = 8;
+                    c.material.renderOrder = 0;
                     
                     //Scale the slice to size
 
@@ -252,32 +283,8 @@
                 }
             }
 
-            //Aid object movement
-            var plane = new THREE.Mesh(
-                new THREE.PlaneBufferGeometry(500, 500, 8, 8),
-                new THREE.MeshBasicMaterial({
-                    //wireframe: true,
-                    //color: 0xffffff,
-                    visible: false
-                })
-            );
-            scene.add(plane);
 
-            //Lighting
-            var light = new THREE.PointLight(0xffffff, 0.5);
-            light.position.set(5, 5, 5);
-            light.intensity = 0.5;
-            scene.add(light);
-
-            var lighting = new THREEx.ThreePointsLighting();
-            scene.add(lighting);
-
-            //EVENTS
-            document.addEventListener("mousedown", mouseDown, false);
-            document.addEventListener("mouseup", mouseUp, false);
-            document.addEventListener("mousemove", onMouseMove, false);
-            window.addEventListener("resize", handleResize, false);
-
+            //Handle events
             function mouseDown(event) {
                 event.preventDefault();
 
@@ -306,6 +313,7 @@
                             }
                         }
                     })
+                    //
 
 
                     controls.enabled = false;
@@ -320,7 +328,7 @@
 
             function mouseUp(event) {
                 if(selected != null) {
-                    updateOrder(selected);
+                    //updateOrder(selected);
                     //selected.material.transparent = false;
                     selected.material.color = objColor;
                     selected = null;
@@ -366,11 +374,11 @@
                 objOrder[pos] = obj.parent;
 
                 //Swap clipping planes?
-                /*
+                
                 var temp = clipPlanes[pos];
                 clipPlanes[pos] = clipPlanes[cur];
                 clipPlanes[cur] = temp;
-                */
+                
 
                 /*
                 clipPlanes[cur].forEach(function(plane) {
