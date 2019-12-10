@@ -106,7 +106,7 @@
                 objOrder = []; //Record of stacked order
                 var loader = new THREE.OBJLoader();
                 loader.load(
-                    "models/iceberg.obj", //Models from Poly by Google, licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
+                    "models/pin.obj", //Models from Poly by Google, licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
 
                     function(obj) {
                         var found = 0;
@@ -289,7 +289,9 @@
                     //Move the slice into place (not required)
                     group.position.y = i*UNIT + UNIT;
                 }
-                
+
+                camera.updateProjectionMatrix();
+                camera.updateMatrixWorld();
 
                 //Animate now that we're done...
                 animate();
