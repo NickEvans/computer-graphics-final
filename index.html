@@ -18,7 +18,7 @@
             //Global declarations
             var WIDTH, HEIGHT, viewSize, mouse, ray, offset, selected;
             var scene, camera, renderer, controls, loader, light, lighting;
-            var clipPlanes, sceneObjects, objOrder, model, objColor, colors, plane;
+            var clipPlanes, sceneObjects, objOrder, model, objColor, colors, plane, stencilMeshList, planeMeshList;
 
             init();
             //animate();
@@ -47,6 +47,8 @@
                 //Scene
                 scene = new THREE.Scene();
                 scene.background = new THREE.Color(0x86A3C3);
+                stencilMeshList = new Array(4);
+                planeMeshList = new Array(4);
 
                 //Interactivity
                 mouse = new THREE.Vector2();
@@ -94,7 +96,7 @@
                     camera.updateProjectionMatrix();
                     camera.updateMatrixWorld();
                 });
-                controls.maxPolarAngle = Math.PI/3;
+                //controls.maxPolarAngle = Math.PI/3;
                 controls.minPolarAngle = Math.PI/3;
                 controls.minAzimuthAngle = -Math.PI/8;
                 controls.maxAzimuthAngle = Math.PI/2.2;
@@ -104,7 +106,7 @@
                 objOrder = []; //Record of stacked order
                 var loader = new THREE.OBJLoader();
                 loader.load(
-                    "models/pin.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
+                    "models/Peach_01.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
 
                     function(obj) {
                         var found = 0;
@@ -218,52 +220,58 @@
                     /// STENCIL PLANE RENDERING
                     var meshPlaneGroup = new THREE.Group;
                     //var meshPlanes = [];
-                    var meshPlaneGeometry = new THREE.PlaneBufferGeometry(16, 16);
+                    var meshPlaneGeometry = new THREE.PlaneBufferGeometry(4, 4);
 
                     ///////for(var j=0; j<2; j++) {
-                        //var planeMeshGroup = new THREE.Group();
-                        var plane = clipPlanes[i][1];
-                        var meshStencilGroup = createStencilGroup(mod.geometry, plane, i+1);
-                        //meshStencilGroup.renderOrder = 0;
-                        meshStencilGroup.position.set(0,-i,0); //Same offset as visible geometry
+                    //var planeMeshGroup = new THREE.Group();
+                    var plane = clipPlanes[i][1];
+                    var meshStencilGroup = createStencilGroup(mod.geometry, plane, i+1);
+                    //meshStencilGroup.renderOrder = 0;
+                    meshStencilGroup.position.set(0,-i,0); //Same offset as visible geometry
 
-                        //Plane fills in hollow section of clipped geometry
-                        var meshPlaneMaterial = new THREE.MeshStandardMaterial({
-                            color: colors[i],
-                            metalness: 0.1,
-                            roughness: 0.75,
-                            stencilWrite: true,
-                            //colorWrite: true,
-                            depthWrite: true,
-                            depthTest: true,
-							stencilRef: 0,
-							stencilFunc: THREE.NotEqualStencilFunc,
-							stencilFail: THREE.ReplaceStencilOp,
-							stencilZFail: THREE.ReplaceStencilOp,
-							stencilZPass: THREE.ReplaceStencilOp,
-                        });
+                    //Plane fills in hollow section of clipped geometry
+                    var meshPlaneMaterial = new THREE.MeshStandardMaterial({
+                        color: colors[i],
+                        metalness: 0.1,
+                        roughness: 0.75,
+                        stencilWrite: true,
+                        //colorWrite: true,
+                        //depthWrite: false,
+                        //depthTest: true,
+                        stencilRef: 0,
+                        stencilFunc: THREE.NotEqualStencilFunc,
+                        stencilFail: THREE.ReplaceStencilOp,
+                        stencilZFail: THREE.ReplaceStencilOp,
+                        stencilZPass: THREE.ReplaceStencilOp,
+                    });
 
-                        var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
-                        
-                        //planeRenderCounter++;
-                        //meshPlane.name = "Plane";
-                        
-                        meshPlane.onAfterRender = function(renderer) {
-                            renderer.clearStencil();
-                            //console.log("Stencil cleared after rendering mesh on order " + material.renderOrder);
-                        };
+                    var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
+                    
+                    //planeRenderCounter++;
+                    //meshPlane.name = "Plane";
+                    
+                    meshPlane.onAfterRender = function(renderer) {
+                        renderer.clearStencil();
+                        //console.log("Stencil cleared after rendering mesh on order " + material.renderOrder);
+                    };
 
-                        meshPlane.renderOrder =  i+1.1;
-                        //meshPlane.receiveShadow = true;
-                        //meshPlane.castShadow = true;
-                        
-                        group.add(meshStencilGroup);
-                        group.add(meshPlane);
-                        meshPlaneGroup.add(meshPlane);
-                        meshPlanes.push(meshPlane);
-                        //console.log("A thing was pushed... " + meshPlanes.length);
-                        scene.add(meshPlaneGroup);
-                        
+                    meshPlane.renderOrder =  i+1.1;
+                    //meshPlane.receiveShadow = true;
+                    //meshPlane.castShadow = true;
+                    
+                    group.add(meshStencilGroup);
+
+                    meshPlaneGroup.add(meshPlane);
+
+                    //These lists will be iterated over to update rendering order:
+                    //meshPlanes.push(meshPlane);
+
+                    stencilMeshList[i] = meshStencilGroup;
+                    planeMeshList[i] = meshPlane;
+
+                    console.log("A thing was pushed... " + meshPlanes.length);
+                    scene.add(meshPlaneGroup);
+                    
                     /////////}
 
                     //Visible clipped geometry
@@ -300,6 +308,19 @@
                     
                     //Move the slice into place (not required)
                     group.position.y = i+1;
+                }
+
+                //Position planes
+                for(var i=0; i<4; i++) {
+                    console.log("Positioning plane..");
+                    planeHi = clipPlanes[i][1];
+                    meshHi = planeMeshList[i];
+                    planeHi.coplanarPoint(meshHi.position);
+                        meshHi.lookAt(
+                            meshHi.position.x - planeHi.normal.x,
+                            meshHi.position.y - planeHi.normal.y,
+                            meshHi.position.z - planeHi.normal.z,
+                        );
                 }
 
                 //Animate now that we're done...
@@ -352,7 +373,7 @@
 
             function mouseUp(event) {
                 if(selected != null) {
-                    //updateOrder(selected);
+                    updateOrder(selected);
                     //selected.material.transparent = false;
                     selected.material.color = objColor;
                     selected = null;
@@ -383,13 +404,14 @@
                     selected.position.x = 0;
                     selected.position.z = 0;
 
-                    //updateOrder(selected);
+                    updateOrder(selected);
                 }
             }
 
             function updateOrder(obj) {
                 //Update position
-                var pos = Math.min(Math.max(0, Math.round(obj.parent.position.y)), 3);
+                var pos = Math.min(Math.max(1, Math.round(obj.parent.position.y)), 4);
+                pos--;
 
                 //Swap recorded order
                 var cur = objOrder.indexOf(obj.parent);
@@ -398,10 +420,29 @@
                 objOrder[pos] = obj.parent;
 
                 //Swap clipping planes?
-                
                 var temp = clipPlanes[pos];
                 clipPlanes[pos] = clipPlanes[cur];
                 clipPlanes[cur] = temp;
+                
+                /*
+                //Swap stencil render order:
+                var temp = stencilMeshList[pos];
+                stencilMeshList[pos] = stencilMeshList[cur];
+                stencilMeshList[cur] = temp;
+
+                //Swap plane mesh rendering order:
+                var temp = planeMeshList[pos];
+                planeMeshList[pos] = planeMeshList[cur];
+                planeMeshList[cur] = temp;
+
+                //Update rendering orders:
+                for(var i=0; i<4; i++) {
+                    stencilMeshList[i].renderOrder = i + 1;
+                    planeMeshList[i].renderOrder = i + 1.1;
+                }
+                */
+                
+                console.log("Position: " + pos);
                 
 
                 /*
@@ -431,6 +472,7 @@
 
             //Animation loop
             var t = 0.0;
+            var solved = false;
             function animate() {
                 requestAnimationFrame(animate);
 
@@ -443,22 +485,29 @@
                     var planeLo = clipPlanes[i][0];
                     var planeHi = clipPlanes[i][1];
 
-                    /*
+                    //i+=1;
+
+                    
                     if(obj.children.some(function(child){ return child == selected })) {
                         done = false;
                     } else if(Math.abs(Number.parseFloat(obj.position.y).toFixed(2)) == Number.parseFloat(i).toFixed(2)) {
                         done = done && true;
                         //Snap to prevent gaps, or a lengthy animation
-                        obj.position.copy(new THREE.Vector3(0, i, 0));
+                        obj.position.copy(new THREE.Vector3(0, 1+i, 0));
                         planeLo.set(planeLo.normal, -i + 1);
                         planeHi.set(planeHi.normal, i);
                     } else {
                         done = false;
-                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        obj.position.lerp(new THREE.Vector3(0, 1+i, 0), 0.1536);
                         planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, -i + 1, 0.1536));
                         planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i, 0.1536));
                     }
-                    */
+
+                    //Update render order for stencils
+                    
+                    
+                    //i-=1;
+                    
 
                     //Adjust plane objects to clipping planes
                     //var meshLo = meshPlanes[i*2];
@@ -474,7 +523,7 @@
 						meshLo.position.y - planeLo.normal.y,
 						meshLo.position.z - planeLo.normal.z,
                     );
-                    */
+                    
                     
                     planeHi.coplanarPoint(meshHi.position);
                     meshHi.lookAt(
@@ -484,7 +533,7 @@
                     );
                     //meshHi.position.x -= 0.01;
                     
-
+                    */
 
                 });
                 
