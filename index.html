@@ -16,6 +16,11 @@
         <script src='js/threex.basiclighting.js'></script>
         <script>
             //Global declarations
+            const SIZE = 4;
+            const SLICES = 8;
+            var UNIT = SIZE / SLICES;
+            
+
             var WIDTH, HEIGHT, viewSize, mouse, ray, offset, selected;
             var scene, camera, renderer, controls, loader, light, lighting;
             var clipPlanes, sceneObjects, objOrder, model, objColor, colors, plane;
@@ -25,28 +30,29 @@
             //nderer.render(scene, camera);
 
             function init() {
+                console.log("UNIT SIZE: " + UNIT);
                 //View settings
                 WIDTH = window.innerWidth;
                 HEIGHT = window.innerHeight;
                 var aspect = WIDTH / HEIGHT;
-                viewSize = 8;
+                viewSize = 9;
 
                 //Model
                 clipPlanes = new Array(4);
                 model = new THREE.Mesh();
-                objColor = new THREE.Color(0xB6CEC7);
-                objColorSelect = new THREE.Color(0xC5DED7);
-
+                
                 //Colors
                 colors = [];
                 colors.push(new THREE.Color(0xA8E6CF));
                 colors.push(new THREE.Color(0xDCEDC1));
                 colors.push(new THREE.Color(0xFFD3B6));
                 colors.push(new THREE.Color(0xFFAAA5));
+                objColor = new THREE.Color(0xedf6f7);
+                objColorSelect = new THREE.Color(0xfafeff);
 
                 //Scene
                 scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x86A3C3);
+                scene.background = new THREE.Color(0x4c7068);
 
                 //Interactivity
                 mouse = new THREE.Vector2();
@@ -66,8 +72,8 @@
 
                 //Camera
                 camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
-                camera.position.set(10,10,10);
-                camera.lookAt(scene.position);
+                camera.position.set(15,15,15);
+                //camera.lookAt(scene.position);
                 camera.updateProjectionMatrix();
                 camera.updateMatrixWorld();
 
@@ -104,7 +110,7 @@
                 objOrder = []; //Record of stacked order
                 var loader = new THREE.OBJLoader();
                 loader.load(
-                    "models/iceberg.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
+                    "models/Peach_01.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
 
                     function(obj) {
                         var found = 0;
@@ -113,13 +119,14 @@
                                 if(child instanceof THREE.Mesh) {
                                     //found++;
                                     var mod = child.clone();
-                                    mod.geometry.center();
+                                    
                                     var boundingBox = new THREE.Box3();
                                     boundingBox.setFromObject(mod);
                                     var size = new THREE.Vector3();
                                     boundingBox.getSize(size);
-                                    var scaleFactor = 4 / size.y;
+                                    var scaleFactor = SIZE / size.y;
                                     mod.geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+                                    mod.geometry.center();
 
                                     //if(found == 20)
                                     //Create slices!
@@ -195,7 +202,7 @@
             var meshPlanes = [];
             function addMeshes(mod) {
 
-                for(var i=0; i<4; i++) {
+                for(var i=0; i<SLICES; i++) {
                     //Group contains visible slice mesh along with stencil mesh and plane
                     var group = new THREE.Group(); 
                     
@@ -206,14 +213,13 @@
                     clipPlanes[i][0] = new THREE.Plane(
                         //Lower plane
                         new THREE.Vector3(0, 1, 0),
-                        -i + 1
+                        -UNIT + UNIT
                     );
                     clipPlanes[i][1] = new THREE.Plane(
                         //Upper plane
                         new THREE.Vector3(0, -1, 0),
-                        i + 0
+                        UNIT
                     );
-                    console.log("Created clip planes at " + i);
 
                     /// STENCIL PLANE RENDERING
                     var meshPlaneGroup = new THREE.Group;
@@ -225,11 +231,11 @@
                         var plane = clipPlanes[i][1];
                         var meshStencilGroup = createStencilGroup(mod.geometry, plane, i+1);
                         //meshStencilGroup.renderOrder = 0;
-                        meshStencilGroup.position.set(0,-i,0); //Same offset as visible geometry
+                        meshStencilGroup.position.set(0,(-i+(SLICES / SIZE))*UNIT,0); //Same offset as visible geometry
 
                         //Plane fills in hollow section of clipped geometry
                         var meshPlaneMaterial = new THREE.MeshStandardMaterial({
-                            color: colors[i],
+                            color: colors[i % 4],
                             metalness: 0.1,
                             roughness: 0.75,
                             stencilWrite: true,
@@ -245,12 +251,8 @@
 
                         var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
                         
-                        //planeRenderCounter++;
-                        //meshPlane.name = "Plane";
-                        
                         meshPlane.onAfterRender = function(renderer) {
                             renderer.clearStencil();
-                            //console.log("Stencil cleared after rendering mesh on order " + material.renderOrder);
                         };
 
                         meshPlane.renderOrder =  i+1.1;
@@ -288,7 +290,7 @@
                     );
 
                     //An offset so each slice is different
-                    c.position.set(0,-i,0);
+                    c.position.set(0,(-i+(SLICES / SIZE))*UNIT,0);
                     group.add(c);
 
                     //Prevents banding where meshes overlap
@@ -302,7 +304,7 @@
                     objOrder.push(group);
                     
                     //Move the slice into place (not required)
-                    group.position.y = i+1;
+                    group.position.y = i*UNIT + UNIT;
                 }
 
                 //Animate now that we're done...
@@ -318,8 +320,8 @@
                 mouse.set((event.clientX/WIDTH)*2 - 1, -(event.clientY/HEIGHT)*2 + 1);
                 ray.setFromCamera(mouse, camera);
                 var hits = ray.intersectObjects(sceneObjects);
-
-                for(let i=0; i<hits.length; i++) {
+                if(hits) {
+                    for(let i=0; i<hits.length; i++) {
                     let cplanes = hits[i].object.material.clippingPlanes;
                     if(cplanes.length > 0) {
                         if(cplanes.some(function(elem) { return elem.distanceToPoint(hits[i].point) < 0; })) {
@@ -332,15 +334,9 @@
                     //selected.material.opacity = 0.6;
                     selected.material.color = objColorSelect;
                     
-                    //This isn't working:
-                    selected.parent.children.forEach(function(child) {
-                        if(child.material) {
-                            if(child.material.color == objColor) {
-                                child.material.color = objColorSelect;
-                            }
-                        }
-                    })
-                    //
+                    var index = objOrder.indexOf(selected.parent);
+                    //meshPlanes[index].material.color = objColorSelect;
+                    
 
 
                     controls.enabled = false;
@@ -351,6 +347,7 @@
                     var hits = ray.intersectObject(plane);
                     offset.copy(hits[0].point).sub(selected.parent.position);
                 }
+                }
             }
 
             function mouseUp(event) {
@@ -358,6 +355,10 @@
                     updateOrder(selected);
                     //selected.material.transparent = false;
                     selected.material.color = objColor;
+                    
+                    var index = objOrder.indexOf(selected.parent);
+                    //meshPlanes[index].material.color = objColor;
+
                     selected = null;
                     controls.enabled = true;
                 }
@@ -392,8 +393,11 @@
 
             function updateOrder(obj) {
                 //Update position
-                var pos = Math.min(Math.max(1, Math.round(obj.parent.position.y)), 4);
+                var pos = Math.min(Math.max(1, Math.round(obj.parent.position.y * (1/UNIT))), SLICES);
                 pos--;
+                console.log("Y: " +obj.parent.position.y);
+                console.log("Pos: " + (pos));
+                console.log("C POS: " + obj.position.y);
 
                 //Swap recorded order
                 var cur = objOrder.indexOf(obj.parent);
@@ -401,8 +405,7 @@
                 objOrder[cur] = temp;
                 objOrder[pos] = obj.parent;
 
-                //Swap clipping planes?
-                
+                //Swap clipping planes
                 var temp = clipPlanes[pos];
                 clipPlanes[pos] = clipPlanes[cur];
                 clipPlanes[cur] = temp;
@@ -439,8 +442,11 @@
             }
 
             //Animation loop
-            var t = 0.0;
+            var t = 0;
             var solved = false;
+            var initialBoot = true; //Debounce animation on start
+            var shuff = false;
+
             function animate() {
                 requestAnimationFrame(animate);
 
@@ -456,17 +462,17 @@
                     
                     if(obj.children.some(function(child){ return child == selected })) {
                         done = false;
-                    } else if(Math.abs(Number.parseFloat(obj.position.y).toFixed(2)) == Number.parseFloat(i+1).toFixed(2)) {
+                    } else if(Math.abs(Number.parseFloat(obj.position.y).toFixed(2)) == Number.parseFloat(i*UNIT+UNIT).toFixed(2)) {
                         done = done && true;
                         //Snap to prevent gaps, or a lengthy animation
-                        obj.position.copy(new THREE.Vector3(0, i+1, 0));
-                        planeLo.set(planeLo.normal, -i + 1);
-                        planeHi.set(planeHi.normal, i);
+                        obj.position.copy(new THREE.Vector3(0, (i+1)*UNIT, 0));
+                        planeLo.set(planeLo.normal, (-i+1)*UNIT);
+                        planeHi.set(planeHi.normal, (i)*UNIT);
                     } else {
                         done = false;
-                        obj.position.lerp(new THREE.Vector3(0, i+1, 0), 0.1536);
-                        planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, -i + 1, 0.1536));
-                        planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i, 0.1536));
+                        obj.position.lerp(new THREE.Vector3(0, (i+1)*UNIT, 0), 0.1536);
+                        planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, (-i+1)*UNIT, 0.1536));
+                        planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i*UNIT, 0.1536));
                     }
                     
 
@@ -507,8 +513,13 @@
                         group.updateMatrixWorld();
                         var vector = new THREE.Vector3();
                         vector.setFromMatrixPosition(group.children[0].matrixWorld);
-                        return (vector.equals(new THREE.Vector3(0, 0, 0)));
+                        return (vector.y == 1.5);
                     })) {
+                        console.log("SOLVED!!!");
+                        if(solved == false) {
+                            t = 0;
+                            console.log("T set to 0");
+                        }
                         solved = true;
                     } else {
                         solved = false;
@@ -520,10 +531,23 @@
                 }
 
                 if(solved) {
-                        objOrder.forEach(function(group) {
-                            group.rotation.y = smoothLerp(0, 80, t) * 2 * Math.PI;
-                        })
-                        t += 1;
+                    //console.log("TTT: " + t);
+                        
+                            objOrder.forEach(function(group) {
+                                if(group.rotation.y != 2 * Math.PI) {
+                                    group.rotation.y = smoothLerp(0, 80, t) * 2 * Math.PI;
+                                } else {
+                                    group.rotation.y = 0;
+                                    solved = false;
+                                    shuff = true;
+                                }
+                            })
+                            t += 1;
+                        
+                }
+                if(shuff) {
+                    shuffle();
+                    shuff = false;
                 }
 
                 renderer.render(scene, camera);
@@ -535,6 +559,43 @@
                     spinning = false;
                 }
                 return p * p * (3.0 - 2.0 * p);
+            }
+
+            function shuffle() {
+                //Create an array to store the new order of the slices
+                var newOrder = [];
+                for(var i=0; i<SLICES; i++) {
+                    newOrder[i] = i;
+                }
+
+                //New object references
+                var newObjectOrder = new Array(SLICES);
+                var newClipPlanes = new Array(SLICES);
+                var newMeshPlanes = new Array(SLICES);
+
+                //Fisher-Yates shuffle algorithm
+                for(var i = newOrder.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * i)
+                    var temp = newOrder[i]
+                    newOrder[i] = newOrder[j]
+                    newOrder[j] = temp
+                }
+
+                for(var i=0; i<newOrder.length; i++) {
+                    console.log(newOrder[i]);
+                }
+
+                //Now, re-assign slices:
+                for(var i=0; i<SLICES; i++) {
+                    //console.log("Coping objOrder[" + newOrder[i] +"] into newOrder[" + i +"]");
+                    newObjectOrder[i] = objOrder[newOrder[i]];
+                    newClipPlanes[i] = clipPlanes[newOrder[i]];
+                    newMeshPlanes[i] = meshPlanes[newOrder[i]];
+
+                }
+                objOrder = newObjectOrder;
+                clipPlanes = newClipPlanes;
+                meshPlanes = newMeshPlanes;
             }
 
             //animate();
