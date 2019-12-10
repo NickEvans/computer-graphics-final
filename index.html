@@ -66,7 +66,7 @@
 
                 //Camera
                 camera = new THREE.OrthographicCamera( viewSize * aspect / - 2, viewSize * aspect / 2, viewSize / 2, viewSize / - 2, 1, 1000 );
-                camera.position.set(100,100,100);
+                camera.position.set(10,10,10);
                 camera.lookAt(scene.position);
                 camera.updateProjectionMatrix();
                 camera.updateMatrixWorld();
@@ -94,8 +94,8 @@
                     camera.updateProjectionMatrix();
                     camera.updateMatrixWorld();
                 });
-                controls.maxPolarAngle = Math.PI/3;
-                controls.minPolarAngle = Math.PI/3;
+                controls.maxPolarAngle = Math.PI/2.4;
+                controls.minPolarAngle = Math.PI/2.4;
                 controls.minAzimuthAngle = -Math.PI/8;
                 controls.maxAzimuthAngle = Math.PI/2.2;
 
@@ -104,7 +104,7 @@
                 objOrder = []; //Record of stacked order
                 var loader = new THREE.OBJLoader();
                 loader.load(
-                    "models/pin.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
+                    "models/iceberg.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
 
                     function(obj) {
                         var found = 0;
@@ -392,7 +392,8 @@
 
             function updateOrder(obj) {
                 //Update position
-                var pos = Math.min(Math.max(0, Math.round(obj.parent.position.y)), 3);
+                var pos = Math.min(Math.max(1, Math.round(obj.parent.position.y)), 4);
+                pos--;
 
                 //Swap recorded order
                 var cur = objOrder.indexOf(obj.parent);
@@ -439,6 +440,7 @@
 
             //Animation loop
             var t = 0.0;
+            var solved = false;
             function animate() {
                 requestAnimationFrame(animate);
 
@@ -451,22 +453,22 @@
                     var planeLo = clipPlanes[i][0];
                     var planeHi = clipPlanes[i][1];
 
-                    /*
+                    
                     if(obj.children.some(function(child){ return child == selected })) {
                         done = false;
-                    } else if(Math.abs(Number.parseFloat(obj.position.y).toFixed(2)) == Number.parseFloat(i).toFixed(2)) {
+                    } else if(Math.abs(Number.parseFloat(obj.position.y).toFixed(2)) == Number.parseFloat(i+1).toFixed(2)) {
                         done = done && true;
                         //Snap to prevent gaps, or a lengthy animation
-                        obj.position.copy(new THREE.Vector3(0, i, 0));
+                        obj.position.copy(new THREE.Vector3(0, i+1, 0));
                         planeLo.set(planeLo.normal, -i + 1);
                         planeHi.set(planeHi.normal, i);
                     } else {
                         done = false;
-                        obj.position.lerp(new THREE.Vector3(0, i, 0), 0.1536);
+                        obj.position.lerp(new THREE.Vector3(0, i+1, 0), 0.1536);
                         planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, -i + 1, 0.1536));
                         planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i, 0.1536));
                     }
-                    */
+                    
 
                     //Adjust plane objects to clipping planes
                     //var meshLo = meshPlanes[i*2];
