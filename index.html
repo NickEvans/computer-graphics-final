@@ -254,6 +254,8 @@
                         };
 
                         meshPlane.renderOrder =  i+1.1;
+                        clipPlanes[i][1].coplanarPoint(meshPlane.position);
+
                         //meshPlane.receiveShadow = true;
                         //meshPlane.castShadow = true;
                         
@@ -263,6 +265,7 @@
                         meshPlanes.push(meshPlane);
                         //console.log("A thing was pushed... " + meshPlanes.length);
                         scene.add(meshPlaneGroup);
+                        //group.add(meshPlaneGroup);
                         
                     /////////}
 
@@ -352,7 +355,7 @@
 
             function mouseUp(event) {
                 if(selected != null) {
-                    //updateOrder(selected);
+                    updateOrder(selected);
                     //selected.material.transparent = false;
                     selected.material.color = objColor;
                     selected = null;
@@ -383,7 +386,7 @@
                     selected.position.x = 0;
                     selected.position.z = 0;
 
-                    //updateOrder(selected);
+                    updateOrder(selected);
                 }
             }
 
@@ -402,6 +405,11 @@
                 var temp = clipPlanes[pos];
                 clipPlanes[pos] = clipPlanes[cur];
                 clipPlanes[cur] = temp;
+
+                //Swap mesh planes?
+                var temp = meshPlanes[pos];
+                meshPlanes[pos] = meshPlanes[cur];
+                meshPlanes[cur] = temp;
                 
 
                 /*
@@ -476,6 +484,7 @@
                     );
                     */
                     
+                    
                     planeHi.coplanarPoint(meshHi.position);
                     meshHi.lookAt(
 						meshHi.position.x - planeHi.normal.x,
@@ -483,6 +492,7 @@
 						meshHi.position.z - planeHi.normal.z,
                     );
                     //meshHi.position.x -= 0.01;
+                    
                     
 
 
