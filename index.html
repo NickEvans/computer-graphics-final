@@ -26,11 +26,8 @@
             var clipPlanes, sceneObjects, objOrder, model, objColor, colors, plane;
 
             init();
-            //animate();
-            //nderer.render(scene, camera);
 
             function init() {
-                console.log("UNIT SIZE: " + UNIT);
                 //View settings
                 WIDTH = window.innerWidth;
                 HEIGHT = window.innerHeight;
@@ -90,7 +87,6 @@
                 renderer = new THREE.WebGLRenderer({ antialias: true });
                 renderer.setSize(WIDTH, HEIGHT);
                 renderer.localClippingEnabled = true;
-                //renderer.shadowMapEnabled = true;
                 document.body.appendChild(renderer.domElement);
 
                 //Controls
@@ -110,14 +106,13 @@
                 objOrder = []; //Record of stacked order
                 var loader = new THREE.OBJLoader();
                 loader.load(
-                    "models/Peach_01.obj", //"Knight Chess Piece" from Poly by Google is licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
+                    "models/Peach_01.obj", //Models from Poly by Google, licensed under CC BY 2.0 - https://poly.google.com/view/aW5HcCo0KZa
 
                     function(obj) {
                         var found = 0;
                         obj.traverse(function(child) {
                             
                                 if(child instanceof THREE.Mesh) {
-                                    //found++;
                                     var mod = child.clone();
                                     
                                     var boundingBox = new THREE.Box3();
@@ -128,8 +123,6 @@
                                     mod.geometry.scale(scaleFactor, scaleFactor, scaleFactor);
                                     mod.geometry.center();
 
-                                    //if(found == 20)
-                                    //Create slices!
                                     addMeshes(mod);
                                 }
                             
@@ -161,7 +154,6 @@
                     depthTest: false,
                     colorWrite: false,
                     stencilWrite: true,
-                    //stencilRef: 2,
                     stencilFunc: THREE.AlwaysStencilFunc,
                 });
 
@@ -226,50 +218,40 @@
                     //var meshPlanes = [];
                     var meshPlaneGeometry = new THREE.PlaneBufferGeometry(16, 16);
 
-                    ///////for(var j=0; j<2; j++) {
-                        //var planeMeshGroup = new THREE.Group();
-                        var plane = clipPlanes[i][1];
-                        var meshStencilGroup = createStencilGroup(mod.geometry, plane, i+1);
-                        //meshStencilGroup.renderOrder = 0;
-                        meshStencilGroup.position.set(0,(-i+(SLICES / SIZE))*UNIT,0); //Same offset as visible geometry
+                    var plane = clipPlanes[i][1];
+                    var meshStencilGroup = createStencilGroup(mod.geometry, plane, i+1);
+                    meshStencilGroup.position.set(0,(-i+(SLICES / SIZE))*UNIT,0); //Same offset as visible geometry
 
-                        //Plane fills in hollow section of clipped geometry
-                        var meshPlaneMaterial = new THREE.MeshStandardMaterial({
-                            color: colors[i % 4],
-                            metalness: 0.1,
-                            roughness: 0.75,
-                            stencilWrite: true,
-                            //colorWrite: true,
-                            depthWrite: true,
-                            depthTest: true,
-							stencilRef: 0,
-							stencilFunc: THREE.NotEqualStencilFunc,
-							stencilFail: THREE.ReplaceStencilOp,
-							stencilZFail: THREE.ReplaceStencilOp,
-							stencilZPass: THREE.ReplaceStencilOp,
-                        });
+                    //Plane fills in hollow section of clipped geometry
+                    var meshPlaneMaterial = new THREE.MeshStandardMaterial({
+                        color: colors[i % 4],
+                        metalness: 0.1,
+                        roughness: 0.75,
+                        stencilWrite: true,
+                        //colorWrite: true,
+                        depthWrite: true,
+                        depthTest: true,
+                        stencilRef: 0,
+                        stencilFunc: THREE.NotEqualStencilFunc,
+                        stencilFail: THREE.ReplaceStencilOp,
+                        stencilZFail: THREE.ReplaceStencilOp,
+                        stencilZPass: THREE.ReplaceStencilOp,
+                    });
 
-                        var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
-                        
-                        meshPlane.onAfterRender = function(renderer) {
-                            renderer.clearStencil();
-                        };
+                    var meshPlane = new THREE.Mesh(meshPlaneGeometry, meshPlaneMaterial);
+                    
+                    meshPlane.onAfterRender = function(renderer) {
+                        renderer.clearStencil();
+                    };
 
-                        meshPlane.renderOrder =  i+1.1;
-                        clipPlanes[i][1].coplanarPoint(meshPlane.position);
-
-                        //meshPlane.receiveShadow = true;
-                        //meshPlane.castShadow = true;
-                        
-                        group.add(meshStencilGroup);
-                        group.add(meshPlane);
-                        meshPlaneGroup.add(meshPlane);
-                        meshPlanes.push(meshPlane);
-                        //console.log("A thing was pushed... " + meshPlanes.length);
-                        scene.add(meshPlaneGroup);
-                        //group.add(meshPlaneGroup);
-                        
-                    /////////}
+                    meshPlane.renderOrder =  i+1.1;
+                    clipPlanes[i][1].coplanarPoint(meshPlane.position);
+                    
+                    group.add(meshStencilGroup);
+                    group.add(meshPlane);
+                    meshPlaneGroup.add(meshPlane);
+                    meshPlanes.push(meshPlane);
+                    scene.add(meshPlaneGroup);
 
                     //Visible clipped geometry
                     var c = new THREE.Mesh(
@@ -298,7 +280,6 @@
                     c.material.polygonOffsetFactor = -0.1*i;
 
                     c.renderOrder = i+1.2;
-                    //c.castShadow = true;
                     
                     sceneObjects.push(c);
                     objOrder.push(group);
@@ -309,9 +290,7 @@
 
                 //Animate now that we're done...
                 animate();
-                //renderer.render(scene, camera);
             }
-
 
             //Handle events
             function mouseDown(event) {
@@ -330,8 +309,6 @@
                     }
 
                     selected = hits[i].object;
-                    //selected.material.transparent = true;
-                    //selected.material.opacity = 0.6;
                     selected.material.color = objColorSelect;
                     
                     var index = objOrder.indexOf(selected.parent);
@@ -353,7 +330,6 @@
             function mouseUp(event) {
                 if(selected != null) {
                     updateOrder(selected);
-                    //selected.material.transparent = false;
                     selected.material.color = objColor;
                     
                     var index = objOrder.indexOf(selected.parent);
@@ -374,7 +350,6 @@
                 if(selected != null) {
                     var hits = ray.intersectObject(plane);
                     if(hits.length > 0) {
-                        //selected.parent.position.copy(hits[0].point);
                         var planeOffset = selected.parent.position.y;
                         selected.parent.position.copy(hits[0].point.sub(offset));
                         var planeIndex = objOrder.indexOf(selected.parent);
@@ -410,20 +385,10 @@
                 clipPlanes[pos] = clipPlanes[cur];
                 clipPlanes[cur] = temp;
 
-                //Swap mesh planes?
+                //Swap mesh planes
                 var temp = meshPlanes[pos];
                 meshPlanes[pos] = meshPlanes[cur];
                 meshPlanes[cur] = temp;
-                
-
-                /*
-                clipPlanes[cur].forEach(function(plane) {
-                    plane.translate(new THREE.Vector3(0, cur - pos, 0));
-                });
-                clipPlanes[pos].forEach(function(plane) {
-                    plane.translate(new THREE.Vector3(0, pos - cur, 0));
-                });
-                */
             }
 
             function handleResize() {
@@ -474,36 +439,15 @@
                         planeLo.set(planeLo.normal, THREE.Math.lerp(planeLo.constant, (-i+1)*UNIT, 0.1536));
                         planeHi.set(planeHi.normal, THREE.Math.lerp(planeHi.constant, i*UNIT, 0.1536));
                     }
-                    
 
-                    //Adjust plane objects to clipping planes
-                    //var meshLo = meshPlanes[i*2];
                     var meshHi = meshPlanes[i];
-                    //console.log(planeLo.normal.y);
-                    //console.log(meshLo.position.y);
 
-                    /*
-                    planeLo.coplanarPoint(meshLo.position);
-                    
-                    meshLo.lookAt(
-						meshLo.position.x - planeLo.normal.x,
-						meshLo.position.y - planeLo.normal.y,
-						meshLo.position.z - planeLo.normal.z,
-                    );
-                    */
-                    
-                    
                     planeHi.coplanarPoint(meshHi.position);
                     meshHi.lookAt(
 						meshHi.position.x - planeHi.normal.x,
 						meshHi.position.y - planeHi.normal.y,
 						meshHi.position.z - planeHi.normal.z,
                     );
-                    //meshHi.position.x -= 0.01;
-                    
-                    
-
-
                 });
                 
                 animFinished = done;
@@ -587,7 +531,6 @@
 
                 //Now, re-assign slices:
                 for(var i=0; i<SLICES; i++) {
-                    //console.log("Coping objOrder[" + newOrder[i] +"] into newOrder[" + i +"]");
                     newObjectOrder[i] = objOrder[newOrder[i]];
                     newClipPlanes[i] = clipPlanes[newOrder[i]];
                     newMeshPlanes[i] = meshPlanes[newOrder[i]];
@@ -597,8 +540,6 @@
                 clipPlanes = newClipPlanes;
                 meshPlanes = newMeshPlanes;
             }
-
-            //animate();
 
         </script>
     </body>
